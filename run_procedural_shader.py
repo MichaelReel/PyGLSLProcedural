@@ -37,11 +37,11 @@ class ShaderWindow(pyglet.window.Window):
     self.y -= dy * self.zoom;
     
   def on_mouse_release(self, x, y, button, modifiers):
-    print ("x: {}, y: {}, z: {}, zoom: {}, octs: {}, freq: {}", self.x, self.y, self.z, self.zoom, self.octives, self.freq)
+    print ("x: {}, y: {}, z: {}, zoom: {}, octs: {}, freq: {}".format(self.x, self.y, self.z, self.zoom, self.octives, self.freq))
 
   def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
     self.zoom -= scroll_y * 0.0025;
-    print ("x: {}, y: {}, z: {}, zoom: {}, octs: {}, freq: {}", self.x, self.y, self.z, self.zoom, self.octives, self.freq)
+    print ("x: {}, y: {}, z: {}, zoom: {}, octs: {}, freq: {}".format(self.x, self.y, self.z, self.zoom, self.octives, self.freq))
 
   def on_key_release(self, symbol, modifiers):
     if symbol == pyglet.window.key.F2:
@@ -55,9 +55,9 @@ class ShaderWindow(pyglet.window.Window):
     elif symbol == pyglet.window.key.S:
       self.y -= 0.1;
     elif symbol == pyglet.window.key.E:
-      self.z += 0.01;
+      self.z += 0.1;
     elif symbol == pyglet.window.key.D:
-      self.z -= 0.01;
+      self.z -= 0.1;
     elif symbol == pyglet.window.key.R:
       self.zoom += 0.0025;
     elif symbol == pyglet.window.key.F:
@@ -70,7 +70,7 @@ class ShaderWindow(pyglet.window.Window):
       self.freq += 0.01;
     elif symbol == pyglet.window.key.H:
       self.freq -= 0.01;
-    print ("x: {}, y: {}, z: {}, zoom: {}, octs: {}, freq: {}", self.x, self.y, self.z, self.zoom, self.octives, self.freq)
+    print ("x: {}, y: {}, z: {}, zoom: {}, octs: {}, freq: {}".format(self.x, self.y, self.z, self.zoom, self.octives, self.freq))
     
   def saveFromShader(self):
     a = (GLubyte * (4 * self.w * self.h))(0)
@@ -78,7 +78,7 @@ class ShaderWindow(pyglet.window.Window):
     image = pyglet.image.ImageData(self.w, self.h, 'RGBA', a)
     scriptPath = os.path.dirname(os.path.realpath(__file__))
     filePath = scriptPath + "/TESTSAVE_" + time.strftime("%Y%m%d_%H%M%S") + ".png"
-    print ("saved to {}", filePath)
+    print ("saved to {}".format(filePath))
     image.save(filePath)
 
   def getPermutation(self):

@@ -41,10 +41,8 @@ void main() {
 
 float getSumFreq(float x, float y, float z) {
   float totalHash = 0;
-  float frequency = freq;
   for (int oct = 0; oct < octives; oct++) {
-    totalHash += getHash(x * float(oct), y * float(oct), (z + float(p[oct]) ) * float(oct)) * frequency;
-    frequency *= freq;
+    totalHash += getHash(x * float(2 << oct), y * float(2 << oct), z  * float(oct)) * pow(freq, float(oct));
   }
   return totalHash;
 }
