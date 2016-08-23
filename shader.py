@@ -1,3 +1,6 @@
+from __future__ import print_function
+import ctypes
+
 #
 # Copyright Tristam Macdonald 2008.
 #
@@ -38,8 +41,12 @@ class Shader:
 
         # convert the source strings into a ctypes pointer-to-char array, and upload them
         # this is deep, dark, dangerous black magick - don't try stuff like this at home!
-        src = (c_char_p * count)(*strings)
-        glShaderSource(shader, count, cast(pointer(src), POINTER(POINTER(c_char))), None)
+
+        src_buffer = ctypes.create_string_buffer(strings.encode())
+        buf_pointer = ctypes.cast(ctypes.pointer(ctypes.pointer(src_buffer)),
+                                ctypes.POINTER(ctypes.POINTER(ctypes.c_char)))
+        length = ctypes.byref(ctypes.c_int(len(strings) + 1))
+        glShaderSource(shader, 1, buf_pointer, length)
 
         # compile the shader
         glCompileShader(shader)
@@ -57,7 +64,7 @@ class Shader:
             # retrieve the log text
             glGetShaderInfoLog(shader, temp, None, buffer)
             # print the log to the console
-            print buffer.value
+            print (buffer.value)
         else:
             # all is well, so attach the shader to the program
             glAttachShader(self.handle, shader);
@@ -79,7 +86,7 @@ class Shader:
             # retrieve the log text
             glGetProgramInfoLog(self.handle, temp, None, buffer)
             # print the log to the console
-            print buffer.value
+            print (buffer.value)
         else:
             # all is well, so we are linked
             self.linked = True
@@ -99,15 +106,15 @@ class Shader:
         # check there are 1-4 values
         if len(vals) in range(1, 5):
             # select the correct function
-            { 1 : glUniform1f,
+            {   1 : glUniform1f,
                 2 : glUniform2f,
                 3 : glUniform3f,
                 4 : glUniform4f
                 # retrieve the uniform location, and set
-            }[len(vals)](glGetUniformLocation(self.handle, name), *vals)
+            }[len(vals)](glGetUniformLocation(self.handle, name.encode()), *vals)
         else:
             # Allow data arrays greater than 4 values
-            data_loc = glGetUniformLocation(self.handle, name)
+            data_loc = glGetUniformLocation(self.handle, name.encode())
             glUniform1fv(data_loc, len(vals), (gl.c_float * len(vals))(*vals))
 
     # upload an integer uniform
@@ -116,15 +123,15 @@ class Shader:
         # check there are 1-4 values
         if len(vals) in range(1, 5):
             # select the correct function
-            { 1 : glUniform1i,
+            {   1 : glUniform1i,
                 2 : glUniform2i,
                 3 : glUniform3i,
                 4 : glUniform4i
                 # retrieve the uniform location, and set
-            }[len(vals)](glGetUniformLocation(self.handle, name), *vals)
+            }[len(vals)](glGetUniformLocation(self.handle, name.encode()), *vals)
         else:
             # Allow data arrays greater than 4 values
-            data_loc = glGetUniformLocation(self.handle, name)
+            data_loc = glGetUniformLocation(self.handle, name.encode())
             glUniform1iv(data_loc, len(vals), (gl.c_long * len(vals))(*vals))
 
     # upload a uniform matrix

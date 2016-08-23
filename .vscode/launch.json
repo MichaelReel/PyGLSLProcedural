@@ -2,27 +2,29 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python",
+            "name": "Python3",
             "type": "python",
             "request": "launch",
             "stopOnEntry": false,
             "program": "${file}",
+            "pythonPath": "c:/python34/python.exe",
             "debugOptions": [
                 "WaitOnAbnormalExit",
                 "WaitOnNormalExit",
                 "RedirectOutput"
-            ]
+            ] 
         },
         {
-            "name": "Python Console App",
+            "name": "Python2",
             "type": "python",
             "request": "launch",
             "stopOnEntry": false,
             "program": "${file}",
-            "externalConsole": true,
+            "pythonPath": "c:/python27/python.exe",
             "debugOptions": [
                 "WaitOnAbnormalExit",
-                "WaitOnNormalExit"
+                "WaitOnNormalExit",
+                "RedirectOutput"
             ]
         }
     ]
