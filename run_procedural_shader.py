@@ -1,5 +1,5 @@
 from __future__ import print_function
-import pyglet, os, time, sys
+import pyglet, os, time, sys, io
 from pyglet.gl import *
 from shader import Shader
 
@@ -23,8 +23,8 @@ class ShaderWindow(pyglet.window.Window):
     super(ShaderWindow, self).__init__(caption = 'Shader', width=self.w, height=self.h)
 
     self.shader = Shader(
-      ' '.join(open('%s.v.glsl' % shader_path)),
-      ' '.join(open('%s.f.glsl' % shader_path))
+      ' '.join(io.open('%s.v.glsl' % shader_path)),
+      ' '.join(io.open('%s.f.glsl' % shader_path))
     )
 
     self.p = []
