@@ -29,7 +29,7 @@ void main() {
         gl_FragCoord[0] * zoom + x > tile ||
         gl_FragCoord[1] * zoom + y > tile )
     {
-      gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+      gl_FragColor = vec4(0.0, 0.75, 0.0, 1.0);
       return;
     }
   }

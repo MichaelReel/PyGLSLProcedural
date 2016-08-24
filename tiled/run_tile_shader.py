@@ -13,16 +13,16 @@ class ShaderWindow(pyglet.window.Window):
         self.h = 512
 
         # Scaling values
-        self.x = 0.0
-        self.y = 0.0
+        self.x = -1.345
+        self.y = -1.275
         self.z = 0.0
-        self.zoom = 0.02
+        self.zoom = 0.025
         self.octives = 5
         self.freq = 1.0 / 32.0
         self.tile = 10
-        self.bound = False;
+        self.bound = True
+        self.gui = True
 
-        self.windowSize = (float(self.w), float(self.h))
         super(ShaderWindow, self).__init__(caption = 'Shader', width=self.w, height=self.h)
 
         self.shader = Shader(
@@ -35,42 +35,81 @@ class ShaderWindow(pyglet.window.Window):
         for i in range(512):
             self.perm.append(permutation[i % len(permutation)])
 
-    def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-        self.x -= dx * self.zoom;
-        self.y -= dy * self.zoom;
-      
-    def on_mouse_release(self, x, y, button, modifiers):
-        print ("x: {}, y: {}".format(self.x, self.y))
+        self.label1 = pyglet.text.Label('---',
+                        font_name='Courier New',
+                        font_size=10,
+                        x=0, y=20,
+                        anchor_x='left', anchor_y='bottom')
 
+        self.label2 = pyglet.text.Label('---',
+                        font_name='Courier New',
+                        font_size=10,
+                        x=0, y=5,
+                        anchor_x='left', anchor_y='bottom')
+
+        self.helpLabel1 = pyglet.text.HTMLLabel(
+                        '''
+                        <font face="Courier New" color="white">
+                        <b>F2</b>:save, 
+                        <b>H</b>:toggle-gui, 
+                        <b><font size="6">&uarr;</font>/<font size="6">&darr;</font></b>:z-axis
+                        </font>
+                        ''',
+                        x=0, y=self.height + 10,
+                        anchor_x='left', anchor_y='top')
+        self.helpLabel2 = pyglet.text.HTMLLabel(
+                        '''
+                        <font face="Courier New" color="white">
+                        <b><font size="6">&larr;</font>/<font size="6">&rarr;</font></b>:tile-size,
+                        <b>B</b>:toggle-bounds
+                        </font>
+                        ''',
+                        x=0, y=self.height - 10,
+                        anchor_x='left', anchor_y='top')
+        self.helpLabel3 = pyglet.text.HTMLLabel(
+                        '''
+                        <font face="Courier New" color="white">
+                        <b>Q/A</b>:octives, <b>W/S</b>:frequency
+                        </font>
+                        ''',
+                        x=0, y=self.height - 40,
+                        anchor_x='left', anchor_y='top')
+
+    def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
+        self.x -= dx * self.zoom
+        self.y -= dy * self.zoom
+      
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        self.zoom -= scroll_y * 0.0025;
-        print ("zoom: {}".format(self.zoom))
+        self.zoom -= scroll_y * 0.0025
 
     def on_key_release(self, symbol, modifiers):
         if symbol == pyglet.window.key.F2:
             self.saveFromShader()
-        elif symbol == pyglet.window.key.E:
-            self.z += 0.1;
-        elif symbol == pyglet.window.key.D:
-            self.z -= 0.1;
-        elif symbol == pyglet.window.key.R:
-            self.tile += 1;
-        elif symbol == pyglet.window.key.F:
-            self.tile -= 1;
-        elif symbol == pyglet.window.key.T:
-            self.octives += 1;
-        elif symbol == pyglet.window.key.G:
-            self.octives -= 1;
-        elif symbol == pyglet.window.key.Y:
-            self.freq += 0.01;
-        elif symbol == pyglet.window.key.H:
-            self.freq -= 0.01;
+        elif symbol == pyglet.window.key.UP:
+            self.z += 0.1
+        elif symbol == pyglet.window.key.DOWN:
+            self.z -= 0.1
+        elif symbol == pyglet.window.key.RIGHT:
+            self.tile += 1
+        elif symbol == pyglet.window.key.LEFT:
+            self.tile -= 1
+        elif symbol == pyglet.window.key.Q:
+            self.octives += 1
+        elif symbol == pyglet.window.key.A:
+            self.octives -= 1
+        elif symbol == pyglet.window.key.W:
+            self.freq += 0.01
+        elif symbol == pyglet.window.key.S:
+            self.freq -= 0.01
         elif symbol == pyglet.window.key.B:
-            self.bound = not self.bound;
-        print ("z: {}, tile: {}, octs: {}, freq: {}, bound: {}".format(self.z, self.tile, self.octives, self.freq, self.bound))
+            self.bound = not self.bound
+        elif symbol == pyglet.window.key.H:
+            self.gui = not self.gui
       
     def saveFromShader(self):
         a = (GLubyte * (4 * self.w * self.h))(0)
+        # Save without the GUI elements
+        self.drawGenerated()
         glReadPixels(0, 0, self.w, self.h, GL_RGBA, GL_UNSIGNED_BYTE, a)
         image = pyglet.image.ImageData(self.w, self.h, 'RGBA', a)
         scriptPath = os.path.dirname(os.path.realpath(__file__))
@@ -99,6 +138,11 @@ class ShaderWindow(pyglet.window.Window):
         ]
 
     def on_draw(self):
+        self.drawGenerated()
+        if (self.gui):
+            self.drawGUI()
+
+    def drawGenerated(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glOrtho(-1., 1., 1., -1., 0., 1.)
@@ -129,6 +173,22 @@ class ShaderWindow(pyglet.window.Window):
         glEnd()
 
         self.shader.unbind()
+    
+    def drawGUI(self):
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0, self.w, 0, self.h, -1, 1)
+
+        self.label1.text = "coords: ({},{},{}) zoom: {}\n".format(self.x, self.y, self.z, self.zoom)
+        self.label2.text = "tile: {}, octs: {}, freq: {}, bound: {}\n".format(self.tile, self.octives, self.freq, self.bound)
+
+        self.helpLabel1.draw()
+        self.helpLabel2.draw()
+        self.helpLabel3.draw()
+
+        self.label1.draw()
+        self.label2.draw()
+
 
 if not pyglet.gl.gl_info.have_extension('GL_EXT_gpu_shader4'):
     eprint("GL_EXT_gpu_shader4 is not supported in this environment, but is required by the shader. "
