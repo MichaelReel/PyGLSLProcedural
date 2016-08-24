@@ -14,12 +14,25 @@ uniform float zoom;
 uniform int octives;
 uniform float freq;
 uniform int tile;
+uniform bool bound;
 
 float fBm(float x, float y, float z, int per, int octs);
 float noise(float x, float y, float z, int per);
 float surflet(float x, float y, float z, float gridX, float gridY, float gridZ, int per);
 
 void main() {
+
+  if (bound) {
+    // draw bounds
+    if (gl_FragCoord[0] * zoom + x < 0.0 ||
+        gl_FragCoord[1] * zoom + y < 0.0 ||
+        gl_FragCoord[0] * zoom + x > tile ||
+        gl_FragCoord[1] * zoom + y > tile )
+    {
+      gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+      return;
+    }
+  }
 
   // getHash is not normalised to 0.0 <-> 1.0
   // it's really somewhere between -1.0 and +1.0
@@ -31,13 +44,7 @@ void main() {
       octives
     ) * 0.5 + 0.5;
 
-  if (fb < 0.0) {
-    gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
-  } else if (fb > 1.0) {
-    gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
-  } else {
-    gl_FragColor = vec4(fb, fb, fb, 1.0);
-  }
+  gl_FragColor = vec4(fb, fb, fb, 1.0);
 }
 
 float fBm(float x, float y, float z, int per, int octs) {
@@ -54,9 +61,9 @@ float fBm(float x, float y, float z, int per, int octs) {
 }
 
 float noise(float x, float y, float z, int per) {
-  float intX = float(int(x));
-  float intY = float(int(y));
-  float intZ = float(int(z)); // Would this better be floor?
+  float intX = floor(x);
+  float intY = floor(y);
+  float intZ = floor(z); // Would this better be floor?
   return (
     surflet(x, y, z, intX + 0.0, intY + 0.0, intZ + 0.0, per) +
     surflet(x, y, z, intX + 1.0, intY + 0.0, intZ + 0.0, per) +
@@ -78,7 +85,7 @@ float surflet(float x, float y, float z, float gridX, float gridY, float gridZ, 
   float polyZ = 1.0 - 6.0 * pow(distZ, 5.0) + 15.0 * pow(distZ, 4.0) - 10.0 * pow(distZ, 3.0);
   float hashd = float(perm[perm[perm[int(gridX) % per] + int(gridY) % per] + int(gridZ) % per]);
   float grad  = (x - gridX) * (cos(hashd * 2.0 * pi / 256.0)) + 
-                (y - gridY) * (cos(hashd * 2.0 * pi / 256.0));
+                (y - gridY) * (sin(hashd * 2.0 * pi / 256.0));
   return polyX * polyY * polyZ * grad;
 }
 

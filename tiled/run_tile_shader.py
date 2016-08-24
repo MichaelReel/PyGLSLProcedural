@@ -13,13 +13,14 @@ class ShaderWindow(pyglet.window.Window):
         self.h = 512
 
         # Scaling values
-        self.x = -5.4
-        self.y = -5.4
+        self.x = 0.0
+        self.y = 0.0
         self.z = 0.0
         self.zoom = 0.02
         self.octives = 5
         self.freq = 1.0 / 32.0
-        self.tile = 128
+        self.tile = 10
+        self.bound = False;
 
         self.windowSize = (float(self.w), float(self.h))
         super(ShaderWindow, self).__init__(caption = 'Shader', width=self.w, height=self.h)
@@ -39,11 +40,11 @@ class ShaderWindow(pyglet.window.Window):
         self.y -= dy * self.zoom;
       
     def on_mouse_release(self, x, y, button, modifiers):
-        print ("x: {}, y: {}, z: {}, zoom: {}, octs: {}, freq: {}".format(self.x, self.y, self.z, self.zoom, self.octives, self.freq))
+        print ("x: {}, y: {}".format(self.x, self.y))
 
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
         self.zoom -= scroll_y * 0.0025;
-        print ("x: {}, y: {}, z: {}, zoom: {}, octs: {}, freq: {}".format(self.x, self.y, self.z, self.zoom, self.octives, self.freq))
+        print ("zoom: {}".format(self.zoom))
 
     def on_key_release(self, symbol, modifiers):
         if symbol == pyglet.window.key.F2:
@@ -53,9 +54,9 @@ class ShaderWindow(pyglet.window.Window):
         elif symbol == pyglet.window.key.D:
             self.z -= 0.1;
         elif symbol == pyglet.window.key.R:
-            self.tile *= 2;
+            self.tile += 1;
         elif symbol == pyglet.window.key.F:
-            self.tile /= 2 if self.tile > 1 else 1;
+            self.tile -= 1;
         elif symbol == pyglet.window.key.T:
             self.octives += 1;
         elif symbol == pyglet.window.key.G:
@@ -64,7 +65,9 @@ class ShaderWindow(pyglet.window.Window):
             self.freq += 0.01;
         elif symbol == pyglet.window.key.H:
             self.freq -= 0.01;
-        print ("x: {}, y: {}, z: {}, zoom: {}, octs: {}, freq: {}".format(self.x, self.y, self.z, self.zoom, self.octives, self.freq))
+        elif symbol == pyglet.window.key.B:
+            self.bound = not self.bound;
+        print ("z: {}, tile: {}, octs: {}, freq: {}, bound: {}".format(self.z, self.tile, self.octives, self.freq, self.bound))
       
     def saveFromShader(self):
         a = (GLubyte * (4 * self.w * self.h))(0)
@@ -112,6 +115,7 @@ class ShaderWindow(pyglet.window.Window):
         self.shader.uniformi('octives', *[self.octives])
         self.shader.uniformf('freq', *[self.freq])
         self.shader.uniformi('tile', *[self.tile])
+        self.shader.uniformi('bound', *[self.bound])
 
         glBegin(GL_QUADS)
         glVertex2i(-1, -1)
