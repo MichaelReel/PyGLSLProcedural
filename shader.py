@@ -11,7 +11,7 @@ import ctypes
 from pyglet.gl import *
 from ctypes import c_char_p, cast, pointer, POINTER, c_char, c_int, byref, create_string_buffer, c_float
 
-class Shader:
+class Shader(object):
     # vert, frag and geom take arrays of source strings
     # the arrays will be concattenated into one string by OpenGL
     def __init__(self, vert = [], frag = [], geom = []):
