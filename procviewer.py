@@ -14,6 +14,7 @@ class TextureShader(Shader):
         self.checkKeyBindingsFromShaderUniforms(vertexShader)
         self.checkKeyBindingsFromShaderUniforms(fragmentShader)
         self.saveKeyBindings("{}.bindings.json".format(shader_path))
+        self.bindMostObviousMouseControls()
 
         super(TextureShader, self).__init__(vertexShader, fragmentShader)
     
@@ -150,6 +151,27 @@ class TextureShader(Shader):
             if binding.has_key('inc_key'):
                 keyCode = key.symbol_string(binding['inc_key']) + "/" + key.symbol_string(binding['dec_key'])
             yield "<b>{}</b>:{}".format(keyCode, name)
+
+    def bindMostObviousMouseControls(self):
+        if self.bindings.has_key('x'):
+            self.mouseX = self.bindings['x']
+        if self.bindings.has_key('y'):
+            self.mouseY = self.bindings['y']
+        if self.bindings.has_key('zoom'):
+            self.mouseScroll = self.bindings['zoom']
+
+    def mouseDrag(self, dx, dy):
+        zoom = 1
+        if hasattr(self, 'mouseScroll'):
+            zoom = self.mouseScroll['default']
+        if hasattr(self, 'mouseX'):
+            self.mouseX['default'] -= dx * self.mouseX['diff'] * zoom
+        if hasattr(self, 'mouseY'):
+            self.mouseY['default'] -= dy * self.mouseY['diff'] * zoom
+
+    def mouseScrollY(self, scroll_y):
+        if hasattr(self, 'mouseScroll'):
+            self.mouseScroll['default'] -= scroll_y * self.mouseScroll['diff']
 
 def preferredKeyOrder():
     # Particular keys prioritised for use

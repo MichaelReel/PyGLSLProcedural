@@ -25,6 +25,6 @@
 "type": "float"},
 "zoom": {"dec_key": 102,
 "default": 0.02,
-"diff": 1.0,
+"diff": 0.0005,
 "inc_key": 114,
 "type": "float"}}
