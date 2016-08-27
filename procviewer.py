@@ -34,12 +34,25 @@ class TextureShader(Shader):
 
     def checkKeyBindingsFromShaderUniforms(self, shader):
         ''' Parse the shader and look for unbound uniforms to bind '''
-        # Find the single values
-        pattern = re.compile(r'\n(?:\s*)uniform(?:\s*)(?P<type>\w+)(?:\s*)(?P<name>\w+)(?:\s*);')
-        for uniform in re.finditer(pattern, shader):
-            self.checkShaderBinding(uniform.group('name'), uniform.group('type'))
+        # build a regex
+        s    = r'(?:\s*)'                             # optional white space
+        type = r'(?P<type>\w+)'                       # var type
+        name = r'(?P<name>\w+)'                       # var name
+        defv = r'(?P<default>-?[0-9]+(?:.[0-9]+)?)?'  # optional default value
+        diff = r'(?P<diff>-?[0-9]+(?:.[0-9]+)?)?'     # optional diff value
 
-    def checkShaderBinding(self, name, type):
+        pattern = re.compile(r'uniform' + s + type + s + name + s + r'=?' + s + defv + s + r';' + r'(?:'+ s + r'(?://)*' + s + r'diff' + s + diff + r')?')
+        found = False
+        for uniform in re.finditer(pattern, shader):
+            self.checkShaderBinding(uniform)
+            found = True
+
+        if not found:
+            print('No uniforms found in "{}"'.format(shader))
+
+    def checkShaderBinding(self, uniform):
+        name = uniform.group('name')
+        type = uniform.group('type')
         print ("{} {}".format(type, name))
         # Check for name in the bindings, and create or update where necessary
         if self.bindings.has_key(name):
@@ -47,12 +60,14 @@ class TextureShader(Shader):
             if self.bindings[name]['type'] != type:
                 # otherwise, clear and redo
                 del self.bindings[name]
-                self.createBinding(name, type)
+                self.createBinding(uniform)
         else:
             # Add (makeup) new keybinding
-            self.createBinding(name, type)
+            self.createBinding(uniform)
         
-    def createBinding(self, name, type):
+    def createBinding(self, uniform):
+        name = uniform.group('name')
+        type = uniform.group('type')
         self.bindings[name] = {}
         self.bindings[name]['type'] = type
         {   'int'   : self.setupInt,
@@ -61,38 +76,51 @@ class TextureShader(Shader):
             'vec2'  : self.setupVec2,
             'vec3'  : self.setupVec3,
             'vec4'  : self.setupVec4,
-        }[type](self.bindings[name])
+        }[type](self.bindings[name], uniform)
         print ("Binding added for uniform '{}', check the json file and update defaults.".format(name))
     
-    def setupInt(self, bindingDict):
+    def setupInt(self, bindingDict, uniform):
         '''Insert a default value and keys for incrementing and decrementing'''
+        self.getUnboundKey(bindingDict, 'inc_key')
+        self.getUnboundKey(bindingDict, 'dec_key')
         bindingDict['default'] = 0
-        self.getUnboundKey(bindingDict, 'inc_key')
-        self.getUnboundKey(bindingDict, 'dec_key')
         bindingDict['diff'] = 1
+        if uniform.group('default') != None:
+            bindingDict['default'] = int(uniform.group('default'))
+        if uniform.group('diff') != None:
+            bindingDict['diff'] = int(uniform.group('diff'))
 
-    def setupFloat(self, bindingDict):
+    def setupFloat(self, bindingDict, uniform):
         '''Insert a default value and keys for incrementing and decrementing'''
-        bindingDict['default'] = 0.0
         self.getUnboundKey(bindingDict, 'inc_key')
         self.getUnboundKey(bindingDict, 'dec_key')
+        bindingDict['default'] = 0.0
         bindingDict['diff'] = 1.0
+        if uniform.group('default') != None:
+            bindingDict['default'] = float(uniform.group('default'))
+        if uniform.group('diff') != None:
+            bindingDict['diff'] = float(uniform.group('diff'))
 
-    def setupBool(self, bindingDict):
+    def setupBool(self, bindingDict, uniform):
         '''Insert a default value and key for toggling'''
-        bindingDict['default'] = False
         self.getUnboundKey(bindingDict, 'toggle_key')
+        bindingDict['default'] = False
+        if uniform.group('default') != None:
+            bindingDict['default'] = bool(uniform.group('default'))
     
-    def setupVec2(self, bindingDict):
+    def setupVec2(self, bindingDict, uniform):
         '''Insert a default value'''
+        # Currently Untested. Need to parse the default values correctly for this
         bindingDict['default'] = (0.0, 0.0)
         
-    def setupVec3(self, bindingDict):
+    def setupVec3(self, bindingDict, uniform):
         '''Insert a default value'''
+        # Currently Untested. Need to parse the default values correctly for this
         bindingDict['default'] = (0.0, 0.0, 0.0)
         
-    def setupVec4(self, bindingDict):
+    def setupVec4(self, bindingDict, uniform):
         '''Insert a default value'''
+        # Currently Untested. Need to parse the default values correctly for this
         bindingDict['default'] = (0.0, 0.0, 0.0, 0.0)
     
     def setupUsedKeys(self):
@@ -165,19 +193,20 @@ class TextureShader(Shader):
         if hasattr(self, 'mouseScroll'):
             zoom = self.mouseScroll['default']
         if hasattr(self, 'mouseX'):
-            self.mouseX['default'] -= dx * self.mouseX['diff'] * zoom
+            self.mouseX['default'] -= dx * zoom # * self.mouseX['diff']
         if hasattr(self, 'mouseY'):
-            self.mouseY['default'] -= dy * self.mouseY['diff'] * zoom
+            self.mouseY['default'] -= dy * zoom # * self.mouseY['diff']
 
     def mouseScrollY(self, scroll_y):
         if hasattr(self, 'mouseScroll'):
             self.mouseScroll['default'] -= scroll_y * self.mouseScroll['diff']
 
 def preferredKeyOrder():
+    '''Not sure how to do this without constantly launching GeneratorExits'''
     # Particular keys prioritised for use
     for letter in ["Q","A","W","S","E","D","R","F","T","G","Y","H","U",
-                   "J","I","K","O","L","P","Z","X","C","V","B","N","M",
-                   "_1","_2","_3","_4","_5","_6","_7","_8","_9","_0"]:
+                    "J","I","K","O","L","P","Z","X","C","V","B","N","M",
+                    "_1","_2","_3","_4","_5","_6","_7","_8","_9","_0"]:
         yield getattr(key, letter)
     # The rest of the keys in whatever order
     for other in key._key_names:

@@ -3,16 +3,15 @@
 // Perlin reference implementation based on the code at
 // http://mrl.nyu.edu/~perlin/noise/
 
-#define p_size 512
 #define p_range 256.0
 
-uniform int p[p_size];
-uniform float x;
-uniform float y;
-uniform float z;
-uniform float zoom;
-uniform int octives;
-uniform float freq;
+uniform int p[512];         // permutation 256
+uniform float x     = -5.4; // diff 0.1
+uniform float y     = -5.4; // diff 0.1
+uniform float z     = 0.0;  // diff 0.1
+uniform float zoom  = 0.02; // diff 0.0005
+uniform int octives = 9;
+uniform float freq  = 0.73; // diff 0.01
 
 float getSumFreq(float x, float y, float z);
 float getHash(float x, float y, float z); 
