@@ -31,7 +31,7 @@ class TextureShader(Shader):
     def saveKeyBindings(self, keyBindingsFiles):
         ''' Save the latest bindings to file '''
         with open(keyBindingsFiles, "wb") as jsonFile:
-            json.dump(self.bindings, jsonFile, sort_keys=True, separators=(',\n', ': '))
+            json.dump(self.bindings, jsonFile)
 
     def checkKeyBindingsFromShaderUniforms(self, shader):
         ''' Parse the shader and look for unbound uniforms to bind '''
@@ -87,10 +87,10 @@ class TextureShader(Shader):
         type     = r'uniform' + s + r'(?P<type>\w+)' + s         # var type
         name     = r'(?P<name>\w+)' + s                          # var name
         size     = r'\[(?P<size>[0-9]+)\]' + s                   # array size
+        seed     = r'(?:seed' + s + r'(?P<seed>\w+)' + s + r')?' # optional string seed value
         permSize = r'permutation' + s + r'(?P<perm>[0-9]+)' + s  # optional permutation size value
-        seed     = r'seed' + s + r'(?P<seed>\w+)' + s            # optional string seed value
-        lineSize = r'(?P<line>[0-9]+)' + s                       # optional linear size value
-        regex    = type + name + size + r';' + s + r'(?:'+ c + permSize + '(?:' + seed + r')?)?' + r'(?:'+ c + r'linear' + s + lineSize + r')?'
+        lineSize = c + r'linear' + s + r'(?P<line>[0-9]+)' + s   # optional linear size value
+        regex    = type + name + size + r';' + s + r'(?:'+ c + permSize + seed + r')?' + r'(?:' + lineSize + r')?'
         pattern = re.compile(regex)
 
         for uniform in re.finditer(pattern, shader):
@@ -196,6 +196,8 @@ class TextureShader(Shader):
         self.getUnboundKey(bindingDict, 'shuffle_key')
         size = int(uniform.group('size'))
         
+        bindingDict['default'] = [x for x in range(size)]
+
         if uniform.group('line') != None:
             lineSize = int(uniform.group('line'))
             bindingDict['loop'] = lineSize
@@ -208,52 +210,28 @@ class TextureShader(Shader):
             seed = 1
             if uniform.group('seed') != None:
                 seed = int(uniform.group('seed'))
-            rand = Random(seed)
-            perm = [x for x in range(permSize)]
-            rand.shuffle(perm)
-            bindingDict['default'] = []
-            for i in range(size):
-                bindingDict['default'].append(perm[i % permSize])
-        else:
-            bindingDict['default'] = [x for x in range(size)]
+            bindingDict['seed'] = seed
+            updatePermutation(bindingDict)
 
     def setupFloatArray(self, bindingDict, uniform):
-        # '''Insert a default value and keys for incrementing and decrementing'''
-        # self.getUnboundKey(bindingDict, 'inc_key')
-        # self.getUnboundKey(bindingDict, 'dec_key')
-        # bindingDict['default'] = 0.0
-        # bindingDict['diff'] = 1.0
-        # if uniform.group('default') != None:
-        #     bindingDict['default'] = float(uniform.group('default'))
-        # if uniform.group('diff') != None:
-        #     bindingDict['diff'] = float(uniform.group('diff'))
-        pass
+        # '''Insert a default float array'''
+        raise NotImplementedError
 
     def setupBoolArray(self, bindingDict, uniform):
-        # '''Insert a default value and key for toggling'''
-        # self.getUnboundKey(bindingDict, 'toggle_key')
-        # bindingDict['default'] = False
-        # if uniform.group('default') != None:
-        #     bindingDict['default'] = bool(uniform.group('default'))
-        pass
+        # '''Insert a default boolean array'''
+        raise NotImplementedError
     
     def setupVec2Array(self, bindingDict, uniform):
-        # '''Insert a default value'''
-        # # Currently Untested. Need to parse the default values correctly for this
-        # bindingDict['default'] = (0.0, 0.0)
-        pass
+        # '''Insert a default vec2 array'''
+        raise NotImplementedError
         
     def setupVec3Array(self, bindingDict, uniform):
-        # '''Insert a default value'''
-        # # Currently Untested. Need to parse the default values correctly for this
-        # bindingDict['default'] = (0.0, 0.0, 0.0)
-        pass
+        # '''Insert a default vec3'''
+        raise NotImplementedError
         
     def setupVec4Array(self, bindingDict, uniform):
-        # '''Insert a default value'''
-        # # Currently Untested. Need to parse the default values correctly for this
-        # bindingDict['default'] = (0.0, 0.0, 0.0, 0.0)
-        pass
+        # '''Insert a default vec4 array'''
+        raise NotImplementedError
 
     def setupUsedKeys(self):
         self.usedKeys = {}
@@ -277,7 +255,6 @@ class TextureShader(Shader):
     def bindingTrigger(self, symbol):
         if not self.usedKeys.has_key(symbol):
             return
-    
         binding = self.usedKeys[symbol]
         if binding.has_key('toggle_key') and binding['toggle_key'] == symbol:
             binding['default'] = not binding['default']
@@ -287,6 +264,9 @@ class TextureShader(Shader):
             return
         if binding.has_key('dec_key') and binding['dec_key'] == symbol:
             binding['default'] -= binding['diff']
+            return
+        if binding.has_key('shuffle_key') and binding['shuffle_key'] == symbol:
+            updatePermutation(binding)
             return
 
     def setUniforms(self):
@@ -314,6 +294,8 @@ class TextureShader(Shader):
                 keyCode = key.symbol_string(binding['toggle_key'])
             if binding.has_key('inc_key'):
                 keyCode = key.symbol_string(binding['inc_key']) + "/" + key.symbol_string(binding['dec_key'])
+            if binding.has_key('shuffle_key'):
+                keyCode = key.symbol_string(binding['shuffle_key'])
             yield "<b>{}</b>:{}".format(keyCode, name)
 
     def bindMostObviousMouseControls(self):
@@ -347,3 +329,14 @@ def preferredKeyOrder():
     # The rest of the keys in whatever order
     for other in key._key_names:
         yield other
+
+def updatePermutation(binding):
+    permSize = binding['loop']
+    seed     = binding['seed']
+    size     = len(binding['default'])
+    rand     = Random(seed)
+    perm     = binding['default'][:permSize]
+    rand.shuffle(perm)
+    binding['default'] = []
+    for i in range(size):
+        binding['default'].append(perm[i % permSize])
