@@ -13,6 +13,9 @@ class TextureWindow(pyglet.window.Window):
         self.textureShader = TextureShader(shader_path)
         super(TextureWindow, self).__init__(caption = shader_path, width=self.w, height=self.h)
 
+        self.createKeyHelpLabels()
+
+    def createKeyHelpLabels(self):
         self.helpLabels = []
         y = self.height
         for labelText in self.textureShader.getHtmlHelps():
@@ -21,6 +24,21 @@ class TextureWindow(pyglet.window.Window):
                     x=0, y=y,
                     anchor_x='left', anchor_y='top'))
             y -= 20
+    
+    def updateStatusLabels(self):
+        self.statusLabels = []
+        y = 0
+        label = 0
+        for labelText in self.textureShader.getStatuses():
+            # Create a new label if we need one (suddenly)
+            if label >= len(self.statusLabels):
+                self.statusLabels.append(pyglet.text.HTMLLabel("",
+                    x=0, y=y,
+                    anchor_x='left', anchor_y='top'))
+            # Modify an existing label to give it status text
+            self.statusLabels[label].text = "<font face='Courier New' color='white'>{}</font>".format(labelText)
+            y += 20
+            label += 1
 
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
         self.textureShader.mouseDrag(dx, dy)
@@ -44,6 +62,7 @@ class TextureWindow(pyglet.window.Window):
 
     def on_draw(self):
         self.drawGenerated()
+        self.updateStatusLabels()
         self.drawGUI()
         
     def drawGenerated(self):
@@ -55,7 +74,6 @@ class TextureWindow(pyglet.window.Window):
         glLoadIdentity()
 
         self.textureShader.bind()
-        # self.textureShader.uniformi('p', *self.p)
 
         self.textureShader.setUniforms()
 
@@ -79,10 +97,13 @@ class TextureWindow(pyglet.window.Window):
 
         for label in self.helpLabels:
             label.draw()
+        for label in self.statusLabels:
+            label.draw()
 
 if not pyglet.gl.gl_info.have_extension('GL_EXT_gpu_shader4'):
   eprint("GL_EXT_gpu_shader4 is not supported in this environment, but is required by the shader. "
          "Display may be corrupted!")
 
 window = TextureWindow('perlin_reference/proc_shader')
+window = TextureWindow('tiled/tile_shader')
 pyglet.app.run()

@@ -298,6 +298,16 @@ class TextureShader(Shader):
                 keyCode = key.symbol_string(binding['shuffle_key'])
             yield "<b>{}</b>:{}".format(keyCode, name)
 
+    def getStatuses(self):
+        for name in self.bindings:
+            binding = self.bindings[name]
+            status = None
+            if binding.has_key('default'):
+                status = binding['default']
+            if isinstance(status, list):
+                status = "[{},{},{},...,{}]".format(status[0], status[1], status[2], status[-1])
+            yield "<b>{}</b>={}".format(name, status)
+
     def bindMostObviousMouseControls(self):
         if self.bindings.has_key('x'):
             self.mouseX = self.bindings['x']

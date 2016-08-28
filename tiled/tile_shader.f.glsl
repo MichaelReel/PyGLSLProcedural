@@ -11,7 +11,7 @@ uniform float y     = -1.275;  // diff 0.025
 uniform float z     = 0.0;     // diff 0.1
 uniform float zoom  = 0.025;   // diff 0.0025
 uniform int octives = 5;
-uniform float freq  = 0.03125; // diff 0.0025
+uniform float freq  = 0.03125; // diff 0.00125
 uniform int tile    = 10;
 uniform bool bound  = true;
 
