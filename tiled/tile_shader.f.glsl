@@ -4,17 +4,16 @@
 // http://mrl.nyu.edu/~perlin/noise/
 
 #define pi 3.1415926535897932384626433832795
-#define perm_size 512
 
-uniform int perm[perm_size];
-uniform float x;
-uniform float y;
-uniform float z;
-uniform float zoom;
-uniform int octives;
-uniform float freq;
-uniform int tile;
-uniform bool bound;
+uniform int perm[512];         // permutation 256
+uniform float x     = -1.350;  // diff 0.025 
+uniform float y     = -1.275;  // diff 0.025
+uniform float z     = 0.0;     // diff 0.1
+uniform float zoom  = 0.025;   // diff 0.0025
+uniform int octives = 5;
+uniform float freq  = 0.03125; // diff 0.0025
+uniform int tile    = 10;
+uniform bool bound  = true;
 
 float fBm(float x, float y, float z, int per, int octs);
 float noise(float x, float y, float z, int per);

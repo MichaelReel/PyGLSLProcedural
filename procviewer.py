@@ -2,6 +2,7 @@ from __future__ import print_function
 from shader import Shader
 import io, os, json, re
 from pyglet.window import key
+from random import Random
 
 class TextureShader(Shader):
     def __init__(self, shader_path):
@@ -34,7 +35,20 @@ class TextureShader(Shader):
 
     def checkKeyBindingsFromShaderUniforms(self, shader):
         ''' Parse the shader and look for unbound uniforms to bind '''
-        # build a regex
+        
+        found = False
+
+        found = found | self.checkNumericKeyBindingsFromShader(shader)
+        found = found | self.checkBooleanKeyBindingsFromShader(shader)
+        found = found | self.checkArrayKeyBindingsFromShader(shader)
+
+        if not found:
+            print('No uniforms found in "{}"'.format(shader))
+
+    def checkNumericKeyBindingsFromShader(self, shader):
+        found = False
+
+        # build a regex for finding int and float lines:
         s    = r'(?:\s*)'                             # optional white space
         type = r'(?P<type>\w+)'                       # var type
         name = r'(?P<name>\w+)'                       # var name
@@ -42,13 +56,48 @@ class TextureShader(Shader):
         diff = r'(?P<diff>-?[0-9]+(?:.[0-9]+)?)?'     # optional diff value
 
         pattern = re.compile(r'uniform' + s + type + s + name + s + r'=?' + s + defv + s + r';' + r'(?:'+ s + r'(?://)*' + s + r'diff' + s + diff + r')?')
-        found = False
         for uniform in re.finditer(pattern, shader):
             self.checkShaderBinding(uniform)
             found = True
 
-        if not found:
-            print('No uniforms found in "{}"'.format(shader))
+        return found
+
+    def checkBooleanKeyBindingsFromShader(self, shader):
+        found = False
+
+        # build a regex for finding int and float lines:
+        s    = r'(?:\s*)'                             # optional white space
+        type = r'(?P<type>bool)'                      # var type
+        name = r'(?P<name>\w+)'                       # var name
+        defv = r'(?P<default>\w+)?'                   # optional default value
+
+        pattern = re.compile(r'uniform' + s + type + s + name + s + r'=?' + s + defv + s + r';')
+        for uniform in re.finditer(pattern, shader):
+            self.checkShaderBinding(uniform)
+            found = True
+
+        return found
+
+    def checkArrayKeyBindingsFromShader(self, shader):
+        found = False
+
+        # build a regex for finding int and float lines:
+        s        = r'(?:\s*)'                                    # optional white space
+        c        = r'(?://+)' + s                                # comment
+        type     = r'uniform' + s + r'(?P<type>\w+)' + s         # var type
+        name     = r'(?P<name>\w+)' + s                          # var name
+        size     = r'\[(?P<size>[0-9]+)\]' + s                   # array size
+        permSize = r'permutation' + s + r'(?P<perm>[0-9]+)' + s  # optional permutation size value
+        seed     = r'seed' + s + r'(?P<seed>\w+)' + s            # optional string seed value
+        lineSize = r'(?P<line>[0-9]+)' + s                       # optional linear size value
+        regex    = type + name + size + r';' + s + r'(?:'+ c + permSize + '(?:' + seed + r')?)?' + r'(?:'+ c + r'linear' + s + lineSize + r')?'
+        pattern = re.compile(regex)
+
+        for uniform in re.finditer(pattern, shader):
+            self.checkShaderBinding(uniform)
+            found = True
+
+        return found
 
     def checkShaderBinding(self, uniform):
         name = uniform.group('name')
@@ -66,6 +115,11 @@ class TextureShader(Shader):
             self.createBinding(uniform)
         
     def createBinding(self, uniform):
+        # if size is a group, this is from an array check
+        if 'size' in uniform.groupdict().keys():
+            self.createArrayBinding(uniform)
+            return
+        # if size isn't set, it's a primitive
         name = uniform.group('name')
         type = uniform.group('type')
         self.bindings[name] = {}
@@ -76,6 +130,20 @@ class TextureShader(Shader):
             'vec2'  : self.setupVec2,
             'vec3'  : self.setupVec3,
             'vec4'  : self.setupVec4,
+        }[type](self.bindings[name], uniform)
+        print ("Binding added for uniform '{}', check the json file and update defaults.".format(name))
+
+    def createArrayBinding(self, uniform):
+        name = uniform.group('name')
+        type = uniform.group('type')
+        self.bindings[name] = {}
+        self.bindings[name]['type'] = type
+        {   'int'   : self.setupIntArray,
+            'float' : self.setupFloatArray,
+            'bool'  : self.setupBoolArray,
+            'vec2'  : self.setupVec2Array,
+            'vec3'  : self.setupVec3Array,
+            'vec4'  : self.setupVec4Array,
         }[type](self.bindings[name], uniform)
         print ("Binding added for uniform '{}', check the json file and update defaults.".format(name))
     
@@ -123,6 +191,70 @@ class TextureShader(Shader):
         # Currently Untested. Need to parse the default values correctly for this
         bindingDict['default'] = (0.0, 0.0, 0.0, 0.0)
     
+    def setupIntArray(self, bindingDict, uniform):
+        '''Insert a default array and key for shuffling'''
+        self.getUnboundKey(bindingDict, 'shuffle_key')
+        size = int(uniform.group('size'))
+        
+        if uniform.group('line') != None:
+            lineSize = int(uniform.group('line'))
+            bindingDict['loop'] = lineSize
+            bindingDict['default'] = []
+            for i in range(size):
+                bindingDict['default'].append(i % lineSize)
+        elif uniform.group('perm') != None:
+            permSize = int(uniform.group('perm'))
+            bindingDict['loop'] = permSize
+            seed = 1
+            if uniform.group('seed') != None:
+                seed = int(uniform.group('seed'))
+            rand = Random(seed)
+            perm = [x for x in range(permSize)]
+            rand.shuffle(perm)
+            bindingDict['default'] = []
+            for i in range(size):
+                bindingDict['default'].append(perm[i % permSize])
+        else:
+            bindingDict['default'] = [x for x in range(size)]
+
+    def setupFloatArray(self, bindingDict, uniform):
+        # '''Insert a default value and keys for incrementing and decrementing'''
+        # self.getUnboundKey(bindingDict, 'inc_key')
+        # self.getUnboundKey(bindingDict, 'dec_key')
+        # bindingDict['default'] = 0.0
+        # bindingDict['diff'] = 1.0
+        # if uniform.group('default') != None:
+        #     bindingDict['default'] = float(uniform.group('default'))
+        # if uniform.group('diff') != None:
+        #     bindingDict['diff'] = float(uniform.group('diff'))
+        pass
+
+    def setupBoolArray(self, bindingDict, uniform):
+        # '''Insert a default value and key for toggling'''
+        # self.getUnboundKey(bindingDict, 'toggle_key')
+        # bindingDict['default'] = False
+        # if uniform.group('default') != None:
+        #     bindingDict['default'] = bool(uniform.group('default'))
+        pass
+    
+    def setupVec2Array(self, bindingDict, uniform):
+        # '''Insert a default value'''
+        # # Currently Untested. Need to parse the default values correctly for this
+        # bindingDict['default'] = (0.0, 0.0)
+        pass
+        
+    def setupVec3Array(self, bindingDict, uniform):
+        # '''Insert a default value'''
+        # # Currently Untested. Need to parse the default values correctly for this
+        # bindingDict['default'] = (0.0, 0.0, 0.0)
+        pass
+        
+    def setupVec4Array(self, bindingDict, uniform):
+        # '''Insert a default value'''
+        # # Currently Untested. Need to parse the default values correctly for this
+        # bindingDict['default'] = (0.0, 0.0, 0.0, 0.0)
+        pass
+
     def setupUsedKeys(self):
         self.usedKeys = {}
         for binding in self.bindings:
@@ -161,6 +293,10 @@ class TextureShader(Shader):
         for name in self.bindings:
             type = self.bindings[name]['type']
             value = self.bindings[name]['default']
+            if not isinstance(value, list):
+                # Wrap scalars
+                value = [value]
+            # Switch on type
             {
                 'int'   : self.uniformi,
                 'bool'  : self.uniformi,
@@ -168,7 +304,7 @@ class TextureShader(Shader):
                 'vec2'  : self.uniformf,
                 'vec3'  : self.uniformf,
                 'vec4'  : self.uniformf,
-            }[type](name, *[value])
+            }[type](name, *value)
 
     def getHtmlHelps(self):
         for name in self.bindings:
