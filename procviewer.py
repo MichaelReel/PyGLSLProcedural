@@ -22,7 +22,7 @@ class TextureShader(Shader):
     def loadKeyBindings(self, keyBindingsFile):
         ''' Load pre-saved key bindings if they exist '''
         if (os.path.isfile(keyBindingsFile)):
-            with open(keyBindingsFile, "rb") as jsonFile:
+            with open(keyBindingsFile, "r") as jsonFile:
                 self.bindings = json.load(jsonFile)
         else:
             self.bindings = {}
@@ -30,7 +30,7 @@ class TextureShader(Shader):
 
     def saveKeyBindings(self, keyBindingsFiles):
         ''' Save the latest bindings to file '''
-        with open(keyBindingsFiles, "wb") as jsonFile:
+        with open(keyBindingsFiles, "w") as jsonFile:
             json.dump(self.bindings, jsonFile)
 
     def checkKeyBindingsFromShaderUniforms(self, shader):
@@ -104,7 +104,7 @@ class TextureShader(Shader):
         type = uniform.group('type')
         print ("{} {}".format(type, name))
         # Check for name in the bindings, and create or update where necessary
-        if self.bindings.has_key(name):
+        if name in self.bindings:
             # If the type is the same, then leave it unchanged
             if self.bindings[name]['type'] != type:
                 # otherwise, clear and redo
@@ -241,31 +241,31 @@ class TextureShader(Shader):
             self.checkKeyBinding(self.bindings[binding], 'toggle_key')
 
     def checkKeyBinding(self, binding, keyUse):
-        if binding.has_key(keyUse):
+        if keyUse in binding:
             self.usedKeys[binding[keyUse]] = binding
 
     def getUnboundKey(self, binding, keyUse):
         # Find the next key name that isn't already used
         for possibleKey in preferredKeyOrder():
-            if not self.usedKeys.has_key(possibleKey):
+            if possibleKey not in self.usedKeys:
                 binding[keyUse] = possibleKey
                 self.usedKeys[possibleKey] = binding
                 break
 
     def bindingTrigger(self, symbol):
-        if not self.usedKeys.has_key(symbol):
+        if symbol not in self.usedKeys:
             return
         binding = self.usedKeys[symbol]
-        if binding.has_key('toggle_key') and binding['toggle_key'] == symbol:
+        if 'toggle_key' in binding and binding['toggle_key'] == symbol:
             binding['default'] = not binding['default']
             return
-        if binding.has_key('inc_key') and binding['inc_key'] == symbol:
+        if 'inc_key' in binding and binding['inc_key'] == symbol:
             binding['default'] += binding['diff']
             return
-        if binding.has_key('dec_key') and binding['dec_key'] == symbol:
+        if 'dec_key'in binding and binding['dec_key'] == symbol:
             binding['default'] -= binding['diff']
             return
-        if binding.has_key('shuffle_key') and binding['shuffle_key'] == symbol:
+        if 'shuffle_key' in binding and binding['shuffle_key'] == symbol:
             updatePermutation(binding)
             return
 
@@ -290,11 +290,11 @@ class TextureShader(Shader):
         for name in self.bindings:
             binding = self.bindings[name]
             keyCode = None
-            if binding.has_key('toggle_key'):
+            if 'toggle_key' in binding:
                 keyCode = key.symbol_string(binding['toggle_key'])
-            if binding.has_key('inc_key'):
+            if 'inc_key' in binding:
                 keyCode = key.symbol_string(binding['inc_key']) + "/" + key.symbol_string(binding['dec_key'])
-            if binding.has_key('shuffle_key'):
+            if 'shuffle_key' in binding:
                 keyCode = key.symbol_string(binding['shuffle_key'])
             yield "<b>{}</b>:{}".format(keyCode, name)
 
@@ -302,18 +302,18 @@ class TextureShader(Shader):
         for name in self.bindings:
             binding = self.bindings[name]
             status = None
-            if binding.has_key('default'):
+            if 'default' in binding:
                 status = binding['default']
             if isinstance(status, list):
                 status = "[{},{},{},...,{}]".format(status[0], status[1], status[2], status[-1])
             yield "<b>{}</b>={}".format(name, status)
 
     def bindMostObviousMouseControls(self):
-        if self.bindings.has_key('x'):
+        if 'x' in self.bindings:
             self.mouseX = self.bindings['x']
-        if self.bindings.has_key('y'):
+        if 'y' in self.bindings:
             self.mouseY = self.bindings['y']
-        if self.bindings.has_key('zoom'):
+        if 'zoom' in self.bindings:
             self.mouseScroll = self.bindings['zoom']
 
     def mouseDrag(self, dx, dy):
