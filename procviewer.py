@@ -284,6 +284,9 @@ class TextureShader(Shader):
                 'vec2'  : self.uniformf,
                 'vec3'  : self.uniformf,
                 'vec4'  : self.uniformf,
+                'ivec2' : self.uniformi,
+                'ivec3' : self.uniformi,
+                'ivec4' : self.uniformi,
             }[type](name, *value)
 
     def getHtmlHelps(self):

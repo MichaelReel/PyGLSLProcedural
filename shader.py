@@ -103,6 +103,7 @@ class Shader(object):
     # upload a floating point uniform
     # this program must be currently bound
     def uniformf(self, name, *vals):
+        data_loc = glGetUniformLocation(self.handle, name.encode())
         # check there are 1-4 values
         if len(vals) in range(1, 5):
             # select the correct function
@@ -111,15 +112,15 @@ class Shader(object):
                 3 : glUniform3f,
                 4 : glUniform4f
                 # retrieve the uniform location, and set
-            }[len(vals)](glGetUniformLocation(self.handle, name.encode()), *vals)
+            }[len(vals)](data_loc, *vals)
         else:
             # Allow data arrays greater than 4 values
-            data_loc = glGetUniformLocation(self.handle, name.encode())
             glUniform1fv(data_loc, len(vals), (gl.c_float * len(vals))(*vals))
 
     # upload an integer uniform
     # this program must be currently bound
     def uniformi(self, name, *vals):
+        data_loc = glGetUniformLocation(self.handle, name.encode())
         # check there are 1-4 values
         if len(vals) in range(1, 5):
             # select the correct function
@@ -128,10 +129,9 @@ class Shader(object):
                 3 : glUniform3i,
                 4 : glUniform4i
                 # retrieve the uniform location, and set
-            }[len(vals)](glGetUniformLocation(self.handle, name.encode()), *vals)
+            }[len(vals)](data_loc, *vals)
         else:
             # Allow data arrays greater than 4 values
-            data_loc = glGetUniformLocation(self.handle, name.encode())
             glUniform1iv(data_loc, len(vals), (gl.c_long * len(vals))(*vals))
 
     # upload a uniform matrix
