@@ -69,12 +69,61 @@ class TestShaderUniformFloat(ShaderTestBase):
         self.shader.bind()
 
     def test_float_1(self):
-        testFloat = 0.0
-        self.shader.uniformf('', *[testFloat])
+        self.shader.uniformf('', *[0.0])
+
+    def test_float_2(self):
+        self.shader.uniformf('', *[0.0, 0.1])
+        
+    def test_float_3(self):
+        self.shader.uniformf('', *[0.0, 0.1, 0.2])
+        
+    def test_float_4(self):
+        self.shader.uniformf('', *[0.0, 0.1, 0.2, 0.3])
+        
+    def test_float_5(self):
+        self.shader.uniformf('', *[0.0, 0.1, 0.2, 0.3, 0.4])
 
     def tearDown(self):
         self.shader.unbind()
 
+class TestShaderUniformInt(ShaderTestBase):
+
+    def setUp(self):
+        self.shader = Shader(vertexCode, fragmentCode)
+        self.shader.bind()
+
+    def test_int_1(self):
+        self.shader.uniformf('', *[0])
+
+    def test_int_2(self):
+        self.shader.uniformf('', *[0, 1])
+        
+    def test_int_3(self):
+        self.shader.uniformf('', *[0, 1, 2])
+        
+    def test_int_4(self):
+        self.shader.uniformf('', *[0, 1, 2, 3])
+        
+    def test_int_5(self):
+        self.shader.uniformf('', *[0, 1, 2, 3, 4])
+
+    def tearDown(self):
+        self.shader.unbind()
+
+class TestShaderUniformMatrix(ShaderTestBase):
+
+    def setUp(self):
+        self.shader = Shader(vertexCode, fragmentCode)
+        self.shader.bind()
+
+    def test_matrix(self):
+        # Why not the identity matrix? ;-)
+        # Needs to be a flat list, of course
+        matrix = [(1.0 if x == y else 0.0) for x in range(4) for y in range(4)]
+        self.shader.uniform_matrixf('', matrix)
+
+    def tearDown(self):
+        self.shader.unbind()
 
 if __name__ == '__main__':
     unittest.main()

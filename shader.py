@@ -115,7 +115,7 @@ class Shader(object):
             }[len(vals)](data_loc, *vals)
         else:
             # Allow data arrays greater than 4 values
-            glUniform1fv(data_loc, len(vals), (gl.c_float * len(vals))(*vals))
+            glUniform1fv(data_loc, len(vals), (c_float * len(vals))(*vals))
 
     # upload an integer uniform
     # this program must be currently bound
@@ -132,13 +132,13 @@ class Shader(object):
             }[len(vals)](data_loc, *vals)
         else:
             # Allow data arrays greater than 4 values
-            glUniform1iv(data_loc, len(vals), (gl.c_long * len(vals))(*vals))
+            glUniform1iv(data_loc, len(vals), (c_long * len(vals))(*vals))
 
     # upload a uniform matrix
     # works with matrices stored as lists,
     # as well as euclid matrices
     def uniform_matrixf(self, name, mat):
         # obtain the uniform location
-        loc = glGetUniformLocation(self.handle, name)
+        loc = glGetUniformLocation(self.handle, name.encode())
         # upload the 4x4 floating point matrix
         glUniformMatrix4fv(loc, 1, False, (c_float * 16)(*mat))
