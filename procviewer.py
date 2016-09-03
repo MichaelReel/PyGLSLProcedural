@@ -12,8 +12,8 @@ class TextureShader(Shader):
         
         # Load and update key bindings
         self.loadKeyBindings("{}.bindings.json".format(shader_path))
-        self.checkKeyBindingsFromShaderUniforms(vertexShader)
-        self.checkKeyBindingsFromShaderUniforms(fragmentShader)
+        self.checkKeyBindingsFromShaderUniforms(vertexShader, "vertex")
+        self.checkKeyBindingsFromShaderUniforms(fragmentShader, "fragment")
         self.saveKeyBindings("{}.bindings.json".format(shader_path))
         self.bindMostObviousMouseControls()
 
@@ -33,7 +33,7 @@ class TextureShader(Shader):
         with open(keyBindingsFiles, "w") as jsonFile:
             json.dump(self.bindings, jsonFile)
 
-    def checkKeyBindingsFromShaderUniforms(self, shader):
+    def checkKeyBindingsFromShaderUniforms(self, shader, name=""):
         ''' Parse the shader and look for unbound uniforms to bind '''
         
         found = False
@@ -43,7 +43,7 @@ class TextureShader(Shader):
         found = found | self.checkArrayKeyBindingsFromShader(shader)
 
         if not found:
-            print('No uniforms found in "{}"'.format(shader))
+            print('No uniforms defined in shader {}'.format(name))
 
     def checkNumericKeyBindingsFromShader(self, shader):
         found = False
@@ -339,11 +339,19 @@ def preferredKeyOrder():
                     "J","I","K","O","L","P","Z","X","C","V","B","N","M",
                     "_1","_2","_3","_4","_5","_6","_7","_8","_9","_0"]:
         yield getattr(key, letter)
-    # The rest of the keys in whatever order
+    # The rest of the keys in whatever order, this will include keys above
+    # But that's okay - if they're already used they'll not be re-used
     for other in key._key_names:
         yield other
 
 def updatePermutation(binding):
+    '''
+    This takes an list of values in binding['default'] and shuffles them.
+    The value in binding['loop'] will cause the reshuffle to only take the 
+    first 'loop' values in the list, shuffle them, then reproduce the same
+    shuffled values (in the same order) over the rest of the list.
+    The value in binding['seed'] will determine the random seed used for shuffling.
+    '''
     permSize = binding['loop']
     seed     = binding['seed']
     size     = len(binding['default'])

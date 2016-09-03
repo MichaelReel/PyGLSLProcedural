@@ -1,4 +1,4 @@
-import unittest, sys
+import unittest, sys, io
 
 # Deal with v2 and v3 differences in int types
 if sys.version_info < (3,):
@@ -10,17 +10,8 @@ else:
 sys.path.append("..")
 from shader import Shader
 
-vertexCode = """
-//vertex
-#version 110
-void main() {
-  gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-}
-"""
-
-fragmentCode = """
-//fragment
-"""
+vertexCode = ' '.join(io.open('blank/blank_shader.v.glsl'))
+fragmentCode = ' '.join(io.open('blank/blank_shader.f.glsl'))
 
 class ShaderTestBase(unittest.TestCase):
 
