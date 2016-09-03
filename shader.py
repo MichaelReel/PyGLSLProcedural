@@ -9,7 +9,7 @@ import ctypes
 # (see https://swiftcoder.wordpress.com/2008/12/19/simple-glsl-wrapper-for-pyglet/)
 
 from pyglet.gl import *
-from ctypes import c_char_p, cast, pointer, POINTER, c_char, c_int, byref, create_string_buffer, c_float
+from ctypes import c_char_p, cast, pointer, POINTER, c_char, c_int, byref, create_string_buffer, c_float, c_long
 
 class Shader(object):
     # vert, frag and geom take arrays of source strings
