@@ -101,8 +101,8 @@ class TextureWindow(pyglet.window.Window):
             label.draw()
 
 if not pyglet.gl.gl_info.have_extension('GL_EXT_gpu_shader4'):
-  eprint("GL_EXT_gpu_shader4 is not supported in this environment, but is required by the shader. "
-         "Display may be corrupted!")
+    print("GL_EXT_gpu_shader4 is not supported in this environment, but is required by the shader. "
+          "Display may be corrupted!")
 
 window = TextureWindow('perlin_reference/proc_shader')
 window = TextureWindow('tiled/tile_shader')
