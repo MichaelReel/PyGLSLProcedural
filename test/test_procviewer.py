@@ -48,14 +48,49 @@ class TestTextureShaderInitBlank(BaseCase):
         except OSError:
             pass
 
+loadfile = "bindings/loadkey.json"
+savefile = "bindings/savekey.json"
+
 class TestLoadKeyBindings(BaseCase):
 
     def setUp(self):
         # Start with the blank shader
         self.shader = TextureShader("blank/blank_shader")
         # Load a different json file
-        self.shader.loadKeyBindings("bindings/loadkey.json")
-    
+        self.shader.loadKeyBindings(loadfile)
+
+    def test_binding_load(self):
+        # Check bindings have been loaded
+        # {"zoom": {"default": 0.02, "dec_key": 102, "type": "float", "inc_key": 114, "diff": 0.0005}}
+        self.assertIn("zoom", self.shader.bindings)
+        binding = self.shader.bindings["zoom"]
+        self.assertIn("dec_key", binding)
+        self.assertEqual(binding["dec_key"], 102)
+
+class TestSaveKeyBindings(BaseCase):
+
+    def setUp(self):
+        # Clear any file that exists
+        self.tearDown()
+        # Start with the blank shader
+        self.shader = TextureShader("blank/blank_shader")
+        # Load a different json file
+        self.shader.loadKeyBindings(loadfile)
+        # Save key binds to a new file
+        self.shader.saveKeyBindings(savefile)
+
+    def test_binding_save(self):
+        # do a byte compare (should work :-/)
+        with open (loadfile, "r") as lf, open (savefile, "r") as sf:
+            loadBindings = json.load(lf)
+            saveBindings = json.load(sf)
+            self.assertEqual(loadBindings, saveBindings)
+
+    def tearDown(self):
+        try:
+            os.remove(savefile)
+        except OSError:
+            pass
 
 class TestStaticFunctions(BaseCase):
 
