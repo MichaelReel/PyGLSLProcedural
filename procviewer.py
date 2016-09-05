@@ -7,9 +7,13 @@ from random import Random
 class TextureShader(Shader):
     def __init__(self, shader_path):
     
-        vertexShader = ' '.join(io.open('%s.v.glsl' % shader_path))
-        fragmentShader = ' '.join(io.open('%s.f.glsl' % shader_path))
-        
+        # Load shader code
+        vsPath = '%s.v.glsl' % shader_path
+        fsPath = '%s.f.glsl' % shader_path
+        with io.open(vsPath) as vs, io.open(fsPath) as fs:
+            vertexShader = ' '.join(vs)
+            fragmentShader = ' '.join(fs)
+            
         # Load and update key bindings
         self.loadKeyBindings("{}.bindings.json".format(shader_path))
         self.checkKeyBindingsFromShaderUniforms(vertexShader, "vertex")
@@ -17,8 +21,9 @@ class TextureShader(Shader):
         self.saveKeyBindings("{}.bindings.json".format(shader_path))
         self.bindMostObviousMouseControls()
 
+        # Create the shader
         super(TextureShader, self).__init__(vertexShader, fragmentShader)
-    
+
     def loadKeyBindings(self, keyBindingsFile):
         ''' Load pre-saved key bindings if they exist '''
         if (os.path.isfile(keyBindingsFile)):
@@ -333,16 +338,14 @@ class TextureShader(Shader):
             self.mouseScroll['default'] -= scroll_y * self.mouseScroll['diff']
 
 def preferredKeyOrder():
-    '''Not sure how to do this without constantly launching GeneratorExits'''
-    # Particular keys prioritised for use
-    for letter in ["Q","A","W","S","E","D","R","F","T","G","Y","H","U",
-                    "J","I","K","O","L","P","Z","X","C","V","B","N","M",
-                    "_1","_2","_3","_4","_5","_6","_7","_8","_9","_0"]:
-        yield getattr(key, letter)
-    # The rest of the keys in whatever order, this will include keys above
-    # But that's okay - if they're already used they'll not be re-used
-    for other in key._key_names:
-        yield other
+    # Remove the particular keys prioritised for use
+    priorityKeys = ["Q","A","W","S","E","D","R","F","T","G","Y","H","U",
+                "J","I","K","O","L","P","Z","X","C","V","B","N","M",
+                "_1","_2","_3","_4","_5","_6","_7","_8","_9","_0"]
+
+    # clone the full set of key codes, removing the priority keys
+    # from the key list and placing them at the front
+    return [getattr(key, letter) for letter in priorityKeys] + list(set(key._key_names) - set(priorityKeys))
 
 def updatePermutation(binding):
     '''
