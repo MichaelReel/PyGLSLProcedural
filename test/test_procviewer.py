@@ -73,12 +73,15 @@ class TestStaticFunctions(BaseCase):
         binding['default'] = [0, 1, 2, 3, 4, 9, 9, 9, 9, 9]
         updatePermutation(binding)
         # Other values should not have been changed
-        self.assertEquals(binding['loop'], 5)
-        self.assertEquals(binding['seed'], 1)
+        self.assertEqual(binding['loop'], 5)
+        self.assertEqual(binding['seed'], 1)
         # Default should have changed, random reorder of
-        # the first 5 values, duplicated
-        self.assertEquals(binding['default'], [1, 4, 2, 3, 0, 1, 4, 2, 3, 0])
-        # Note, the seed makes this predictable
+        # the first 5 values
+        self.assertEqual(sorted(binding['default'][:5]), list(range(0, 5)))
+        # The second half of the list should be the same as the first
+        self.assertEqual(binding['default'][:5], binding['default'][5:])
+        # Note, the seed is meant to make this predictable:
+        print(binding['default'])
 
 if __name__ == '__main__':
     unittest.main()
