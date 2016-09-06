@@ -1,4 +1,8 @@
 import unittest, sys
+try:
+    from unittest.mock import MagicMock
+except ImportError:
+    from mock import MagicMock
 
 # Deal with v2 and v3 differences in int types
 if sys.version_info < (3,):
@@ -91,6 +95,64 @@ class TestSaveKeyBindings(BaseCase):
             os.remove(savefile)
         except OSError:
             pass
+
+class TestCheckKeyBindingsFromShaderUniforms(BaseCase):
+
+    def setUp(self):
+        self.shader = TextureShader("blank/blank_shader")
+
+    def testFoundNoUniforms(self):
+        self.shader.checkNumericKeyBindingsFromShader = MagicMock(return_value = False)
+        self.shader.checkBooleanKeyBindingsFromShader = MagicMock(return_value = False)
+        self.shader.checkArrayKeyBindingsFromShader   = MagicMock(return_value = False)
+        self.assertFalse(self.shader.checkKeyBindingsFromShaderUniforms("", ""))
+        self.shader.checkNumericKeyBindingsFromShader.assert_called()
+        self.shader.checkBooleanKeyBindingsFromShader.assert_called()
+        self.shader.checkArrayKeyBindingsFromShader.assert_called()
+
+    def testFoundNumericUniforms(self):
+        self.shader.checkNumericKeyBindingsFromShader = MagicMock(return_value = True)
+        self.shader.checkBooleanKeyBindingsFromShader = MagicMock(return_value = False)
+        self.shader.checkArrayKeyBindingsFromShader   = MagicMock(return_value = False)
+        self.assertTrue(self.shader.checkKeyBindingsFromShaderUniforms("", ""))
+        self.shader.checkNumericKeyBindingsFromShader.assert_called()
+        self.shader.checkBooleanKeyBindingsFromShader.assert_called()
+        self.shader.checkArrayKeyBindingsFromShader.assert_called()
+
+    def testFoundBooleanUniforms(self):
+        self.shader.checkNumericKeyBindingsFromShader = MagicMock(return_value = False)
+        self.shader.checkBooleanKeyBindingsFromShader = MagicMock(return_value = True)
+        self.shader.checkArrayKeyBindingsFromShader   = MagicMock(return_value = False)
+        self.assertTrue(self.shader.checkKeyBindingsFromShaderUniforms("", ""))
+        self.shader.checkNumericKeyBindingsFromShader.assert_called()
+        self.shader.checkBooleanKeyBindingsFromShader.assert_called()
+        self.shader.checkArrayKeyBindingsFromShader.assert_called()
+
+    def testFoundArrayUniforms(self):
+        self.shader.checkNumericKeyBindingsFromShader = MagicMock(return_value = False)
+        self.shader.checkBooleanKeyBindingsFromShader = MagicMock(return_value = False)
+        self.shader.checkArrayKeyBindingsFromShader   = MagicMock(return_value = True)
+        self.assertTrue(self.shader.checkKeyBindingsFromShaderUniforms("", ""))
+        self.shader.checkNumericKeyBindingsFromShader.assert_called()
+        self.shader.checkBooleanKeyBindingsFromShader.assert_called()
+        self.shader.checkArrayKeyBindingsFromShader.assert_called()
+
+class TestCheckNumericKeyBindingsFromShader(BaseCase):
+
+    def setUp(self):
+        self.shader = TextureShader("blank/blank_shader")
+        self.shader.checkShaderBinding = MagicMock()
+
+    def test_no_uniforms_found(self):
+        self.assertFalse(self.shader.checkNumericKeyBindingsFromShader(""))
+        self.shader.checkShaderBinding.assert_not_called()
+
+    def test_int_defined_no_default(self):
+        self.assertTrue(self.shader.checkNumericKeyBindingsFromShader("uniform int name;"))
+        #
+
+    
+
 
 class TestStaticFunctions(BaseCase):
 

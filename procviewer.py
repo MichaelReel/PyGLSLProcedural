@@ -50,6 +50,8 @@ class TextureShader(Shader):
         if not found:
             print('No uniforms defined in shader {}'.format(name))
 
+        return found
+
     def checkNumericKeyBindingsFromShader(self, shader):
         found = False
 
