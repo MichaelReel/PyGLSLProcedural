@@ -57,12 +57,13 @@ class TextureShader(Shader):
 
         # build a regex for finding int and float lines:
         s    = r'(?:\s*)'                             # optional white space
-        type = r'(?P<type>\w+)'                       # var type
+        sm   = r'(?:\s+)'                             # manditory white space
+        type = r'(?P<type>(?:int|float))'             # var type
         name = r'(?P<name>\w+)'                       # var name
         defv = r'(?P<default>-?[0-9]+(?:.[0-9]+)?)?'  # optional default value
         diff = r'(?P<diff>-?[0-9]+(?:.[0-9]+)?)?'     # optional diff value
 
-        pattern = re.compile(r'uniform' + s + type + s + name + s + r'=?' + s + defv + s + r';' + r'(?:'+ s + r'(?://)*' + s + r'diff' + s + diff + r')?')
+        pattern = re.compile(r'uniform' + sm + type + sm + name + s + r'=?' + s + defv + s + r';' + r'(?:'+ s + r'(?://)*' + s + r'diff' + sm + diff + r')?')
         for uniform in re.finditer(pattern, shader):
             self.checkShaderBinding(uniform)
             found = True
@@ -74,11 +75,12 @@ class TextureShader(Shader):
 
         # build a regex for finding int and float lines:
         s    = r'(?:\s*)'                             # optional white space
+        sm   = r'(?:\s+)'                             # manditory white space
         type = r'(?P<type>bool)'                      # var type
         name = r'(?P<name>\w+)'                       # var name
         defv = r'(?P<default>\w+)?'                   # optional default value
 
-        pattern = re.compile(r'uniform' + s + type + s + name + s + r'=?' + s + defv + s + r';')
+        pattern = re.compile(r'uniform' + sm + type + sm + name + s + r'=?' + s + defv + s + r';')
         for uniform in re.finditer(pattern, shader):
             self.checkShaderBinding(uniform)
             found = True
@@ -89,14 +91,15 @@ class TextureShader(Shader):
         found = False
 
         # build a regex for finding int and float lines:
-        s        = r'(?:\s*)'                                    # optional white space
-        c        = r'(?://+)' + s                                # comment
-        type     = r'uniform' + s + r'(?P<type>\w+)' + s         # var type
-        name     = r'(?P<name>\w+)' + s                          # var name
-        size     = r'\[(?P<size>[0-9]+)\]' + s                   # array size
-        seed     = r'(?:seed' + s + r'(?P<seed>\w+)' + s + r')?' # optional string seed value
-        permSize = r'permutation' + s + r'(?P<perm>[0-9]+)' + s  # optional permutation size value
-        lineSize = c + r'linear' + s + r'(?P<line>[0-9]+)' + s   # optional linear size value
+        s        = r'(?:\s*)'                                         # optional white space
+        sm       = r'(?:\s+)'                                         # manditory white space
+        c        = r'(?://+)' + s                                     # comment
+        type     = r'uniform' + sm + r'(?P<type>(?:int|float))' + sm  # var type
+        name     = r'(?P<name>\w+)' + s                               # var name
+        size     = r'\[(?P<size>[0-9]+)\]' + s                        # array size
+        seed     = r'(?:seed' + s + r'(?P<seed>\w+)' + s + r')?'      # optional string seed value
+        permSize = r'permutation' + s + r'(?P<perm>[0-9]+)' + s       # optional permutation size value
+        lineSize = c + r'linear' + s + r'(?P<line>[0-9]+)' + s        # optional linear size value
         regex    = type + name + size + r';' + s + r'(?:'+ c + permSize + seed + r')?' + r'(?:' + lineSize + r')?'
         pattern = re.compile(regex)
 

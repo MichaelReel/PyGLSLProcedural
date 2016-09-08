@@ -1,0 +1,5 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    // Want Python3 linting ect, rather than 2 which is also installed
+    "python.pythonPath": "c:/python34/python.exe"
+}
