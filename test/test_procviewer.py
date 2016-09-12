@@ -140,10 +140,6 @@ class TestCheckNumericKeyBindingsFromShader(BaseCase):
         self.shader = TextureShader("blank/blank_shader")
         self.shader.checkShaderBinding = create_autospec(self.shader.checkShaderBinding)
 
-    def test_no_uniforms_found(self):
-        self.assertFalse(self.shader.checkNumericKeyBindingsFromShader(""))
-        self.assertFalse(self.shader.checkShaderBinding.called)
-
     def test_bools_arrays_not_found(self):
         self.assertFalse(self.shader.checkNumericKeyBindingsFromShader(
             "uniform bool boolname; uniform float arrayname[1];"))
@@ -154,6 +150,69 @@ class TestCheckNumericKeyBindingsFromShader(BaseCase):
             "uniform bool boolname; uniform float arrayname[1];"
             "uniform int intname; uniform float floatname;"))
         self.assertEqual(self.shader.checkShaderBinding.call_count, 2)
+
+class TestCheckBooleanKeyBindingsFromShader(BaseCase):
+
+    def setUp(self):
+        self.shader = TextureShader("blank/blank_shader")
+        self.shader.checkShaderBinding = create_autospec(self.shader.checkShaderBinding)
+
+    def test_floats_ints_arrays_not_found(self):
+        self.assertFalse(self.shader.checkBooleanKeyBindingsFromShader(
+            "uniform float arrayname[1];"
+            "uniform int intname; uniform float floatname;"))
+        self.assertEqual(self.shader.checkShaderBinding.call_count, 0)
+    
+    def test_bools_found(self):
+        self.assertTrue(self.shader.checkBooleanKeyBindingsFromShader(
+            "uniform bool boolname; uniform float arrayname[1];"
+            "uniform int intname; uniform float floatname;"))
+        self.assertEqual(self.shader.checkShaderBinding.call_count, 1)
+
+class TestCheckArrayKeyBindingsFromShader(BaseCase):
+
+    def setUp(self):
+        self.shader = TextureShader("blank/blank_shader")
+        self.shader.checkShaderBinding = create_autospec(self.shader.checkShaderBinding)
+
+    def test_floats_ints_bools_not_found(self):
+        self.assertFalse(self.shader.checkArrayKeyBindingsFromShader(
+            "uniform bool boolname;"
+            "uniform int intname; uniform float floatname;"))
+        self.assertEqual(self.shader.checkShaderBinding.call_count, 0)
+    
+    def test_bools_found(self):
+        self.assertTrue(self.shader.checkArrayKeyBindingsFromShader(
+            "uniform bool boolname; uniform float arrayname[1];"
+            "uniform int intname; uniform float floatname;"))
+        self.assertEqual(self.shader.checkShaderBinding.call_count, 1)
+
+class TestCheckShaderBinding(BaseCase):
+
+    class mockUniform(object):
+        def group(self, key):
+            return key
+
+    def setUp(self):
+        self.shader = TextureShader("blank/blank_shader")
+        self.shader.createBinding = create_autospec(self.shader.createBinding)
+        self.uniform = TestCheckShaderBinding.mockUniform()
+
+    def test_name_not_in_bindings(self):
+        self.shader.checkShaderBinding(self.uniform)
+        self.shader.createBinding.assert_called_once_with(self.uniform)
+    
+    def test_name_in_bindings_already_same_type(self):
+        self.shader.bindings['name'] = {}
+        self.shader.bindings['name']['type'] = 'type'
+        self.shader.checkShaderBinding(self.uniform)
+        self.assertEqual(self.shader.createBinding.call_count, 0)
+
+    def test_name_in_bindings_new_type(self):
+        self.shader.bindings['name'] = {}
+        self.shader.bindings['name']['type'] = 'oldtype'
+        self.shader.checkShaderBinding(self.uniform)
+        self.shader.createBinding.assert_called_once_with(self.uniform)
         
 class TestStaticFunctions(BaseCase):
 
