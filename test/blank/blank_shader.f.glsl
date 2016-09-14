@@ -1,1 +1,2 @@
 //fragment
+void main() {}
