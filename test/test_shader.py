@@ -84,19 +84,19 @@ class TestShaderUniformInt(ShaderTestBase):
         self.shader.bind()
 
     def test_int_1(self):
-        self.shader.uniformf('', *[0])
+        self.shader.uniformi('', *[0])
 
     def test_int_2(self):
-        self.shader.uniformf('', *[0, 1])
+        self.shader.uniformi('', *[0, 1])
         
     def test_int_3(self):
-        self.shader.uniformf('', *[0, 1, 2])
+        self.shader.uniformi('', *[0, 1, 2])
         
     def test_int_4(self):
-        self.shader.uniformf('', *[0, 1, 2, 3])
+        self.shader.uniformi('', *[0, 1, 2, 3])
         
     def test_int_5(self):
-        self.shader.uniformf('', *[0, 1, 2, 3, 4])
+        self.shader.uniformi('', *[0, 1, 2, 3, 4])
 
     def tearDown(self):
         self.shader.unbind()
