@@ -198,6 +198,214 @@ class TestCheckShaderBinding(BaseCase):
         self.shader.bindings['name']['type'] = 'oldtype'
         self.shader.checkShaderBinding(self.uniform)
         self.shader.createBinding.assert_called_once_with(self.uniform)
+
+class TestCreateBinding(BaseCase):
+
+    class mockUniform(object):
+        def __init__(self):
+            self.gdict = {}
+
+        def group(self, key):
+            return self.gdict[key]
+
+        def groupdict(self):
+            return self.gdict
+
+    def setUp(self):
+        self.viewer = TextureShader("blank/blank_shader")
+        self.viewer.createArrayBinding = create_autospec(self.viewer.createArrayBinding)
+        self.viewer.setupInt   = create_autospec(self.viewer.setupInt)
+        self.viewer.setupFloat = create_autospec(self.viewer.setupFloat)
+        self.viewer.setupBool  = create_autospec(self.viewer.setupBool)
+        self.viewer.setupVec2  = create_autospec(self.viewer.setupVec2)
+        self.viewer.setupVec3  = create_autospec(self.viewer.setupVec3)
+        self.viewer.setupVec4  = create_autospec(self.viewer.setupVec4)
+
+        self.uniform = TestCreateBinding.mockUniform()
+
+    def test_size_is_set(self):
+        self.uniform.gdict['size'] = '1'
+        self.viewer.createBinding(self.uniform)
+        self.viewer.createArrayBinding.assert_called_once_with(self.uniform)
+        self.assertEqual(self.viewer.setupInt  .call_count, 0)
+        self.assertEqual(self.viewer.setupFloat.call_count, 0)
+        self.assertEqual(self.viewer.setupBool .call_count, 0)
+        self.assertEqual(self.viewer.setupVec2 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec3 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec4 .call_count, 0)
+
+    def test_type_is_int(self):
+        self.uniform.gdict['name'] = 'an_int'
+        self.uniform.gdict['type'] = 'int'
+        self.viewer.createBinding(self.uniform)
+        self.assertEqual(self.viewer.createArrayBinding.call_count, 0)
+        self.viewer.setupInt.assert_called_once_with(self.viewer.bindings['an_int'], self.uniform)
+        self.assertEqual(self.viewer.setupFloat.call_count, 0)
+        self.assertEqual(self.viewer.setupBool .call_count, 0)
+        self.assertEqual(self.viewer.setupVec2 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec3 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec4 .call_count, 0)
+        self.assertEqual(self.viewer.bindings['an_int']['type'], 'int')
+        
+    def test_type_is_float(self):
+        self.uniform.gdict['name'] = 'a_float'
+        self.uniform.gdict['type'] = 'float'
+        self.viewer.createBinding(self.uniform)
+        self.assertEqual(self.viewer.createArrayBinding.call_count, 0)
+        self.assertEqual(self.viewer.setupInt  .call_count, 0)
+        self.viewer.setupFloat.assert_called_once_with(self.viewer.bindings['a_float'], self.uniform)
+        self.assertEqual(self.viewer.setupBool .call_count, 0)
+        self.assertEqual(self.viewer.setupVec2 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec3 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec4 .call_count, 0)
+        self.assertEqual(self.viewer.bindings['a_float']['type'], 'float')
+        
+    def test_type_is_bool(self):
+        self.uniform.gdict['name'] = 'a_bool'
+        self.uniform.gdict['type'] = 'bool'
+        self.viewer.createBinding(self.uniform)
+        self.assertEqual(self.viewer.createArrayBinding.call_count, 0)
+        self.assertEqual(self.viewer.setupInt  .call_count, 0)
+        self.assertEqual(self.viewer.setupFloat.call_count, 0)
+        self.viewer.setupBool.assert_called_once_with(self.viewer.bindings['a_bool'], self.uniform)
+        self.assertEqual(self.viewer.setupVec2 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec3 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec4 .call_count, 0)
+        self.assertEqual(self.viewer.bindings['a_bool']['type'], 'bool')
+        
+    def test_type_is_vec2(self):
+        self.uniform.gdict['name'] = 'a_vec'
+        self.uniform.gdict['type'] = 'vec2'
+        self.viewer.createBinding(self.uniform)
+        self.assertEqual(self.viewer.createArrayBinding.call_count, 0)
+        self.assertEqual(self.viewer.setupInt  .call_count, 0)
+        self.assertEqual(self.viewer.setupFloat.call_count, 0)
+        self.assertEqual(self.viewer.setupBool .call_count, 0)
+        self.viewer.setupVec2.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
+        self.assertEqual(self.viewer.setupVec3 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec4 .call_count, 0)
+        self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec2')
+        
+    def test_type_is_vec3(self):
+        self.uniform.gdict['name'] = 'a_vec'
+        self.uniform.gdict['type'] = 'vec3'
+        self.viewer.createBinding(self.uniform)
+        self.assertEqual(self.viewer.createArrayBinding.call_count, 0)
+        self.assertEqual(self.viewer.setupInt  .call_count, 0)
+        self.assertEqual(self.viewer.setupFloat.call_count, 0)
+        self.assertEqual(self.viewer.setupBool .call_count, 0)
+        self.assertEqual(self.viewer.setupVec2 .call_count, 0)
+        self.viewer.setupVec3.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
+        self.assertEqual(self.viewer.setupVec4 .call_count, 0)
+        self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec3')
+        
+    def test_type_is_vec4(self):
+        self.uniform.gdict['name'] = 'a_vec'
+        self.uniform.gdict['type'] = 'vec4'
+        self.viewer.createBinding(self.uniform)
+        self.assertEqual(self.viewer.createArrayBinding.call_count, 0)
+        self.assertEqual(self.viewer.setupInt  .call_count, 0)
+        self.assertEqual(self.viewer.setupFloat.call_count, 0)
+        self.assertEqual(self.viewer.setupBool .call_count, 0)
+        self.assertEqual(self.viewer.setupVec2 .call_count, 0)
+        self.assertEqual(self.viewer.setupVec3 .call_count, 0)
+        self.viewer.setupVec4.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
+        self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec4')
+
+class TestCreateArrayBinding(BaseCase):
+
+    class mockUniform(object):
+        def __init__(self):
+            self.gdict = {}
+
+        def group(self, key):
+            return self.gdict[key]
+
+        def groupdict(self):
+            return self.gdict
+
+    def setUp(self):
+        self.viewer = TextureShader("blank/blank_shader")
+        self.viewer.setupIntArray   = create_autospec(self.viewer.setupIntArray)
+        self.viewer.setupFloatArray = create_autospec(self.viewer.setupFloatArray)
+        self.viewer.setupBoolArray  = create_autospec(self.viewer.setupBoolArray)
+        self.viewer.setupVec2Array  = create_autospec(self.viewer.setupVec2Array)
+        self.viewer.setupVec3Array  = create_autospec(self.viewer.setupVec3Array)
+        self.viewer.setupVec4Array  = create_autospec(self.viewer.setupVec4Array)
+
+        self.uniform = TestCreateArrayBinding.mockUniform()
+
+    def test_type_is_int(self):
+        self.uniform.gdict['name'] = 'an_int'
+        self.uniform.gdict['type'] = 'int'
+        self.viewer.createArrayBinding(self.uniform)
+        self.viewer.setupIntArray.assert_called_once_with(self.viewer.bindings['an_int'], self.uniform)
+        self.assertEqual(self.viewer.setupFloatArray.call_count, 0)
+        self.assertEqual(self.viewer.setupBoolArray .call_count, 0)
+        self.assertEqual(self.viewer.setupVec2Array .call_count, 0)
+        self.assertEqual(self.viewer.setupVec3Array .call_count, 0)
+        self.assertEqual(self.viewer.setupVec4Array .call_count, 0)
+        self.assertEqual(self.viewer.bindings['an_int']['type'], 'int')
+        
+    def test_type_is_float(self):
+        self.uniform.gdict['name'] = 'a_float'
+        self.uniform.gdict['type'] = 'float'
+        self.viewer.createArrayBinding(self.uniform)
+        self.assertEqual(self.viewer.setupIntArray  .call_count, 0)
+        self.viewer.setupFloatArray.assert_called_once_with(self.viewer.bindings['a_float'], self.uniform)
+        self.assertEqual(self.viewer.setupBoolArray .call_count, 0)
+        self.assertEqual(self.viewer.setupVec2Array .call_count, 0)
+        self.assertEqual(self.viewer.setupVec3Array .call_count, 0)
+        self.assertEqual(self.viewer.setupVec4Array .call_count, 0)
+        self.assertEqual(self.viewer.bindings['a_float']['type'], 'float')
+        
+    def test_type_is_bool(self):
+        self.uniform.gdict['name'] = 'a_bool'
+        self.uniform.gdict['type'] = 'bool'
+        self.viewer.createArrayBinding(self.uniform)
+        self.assertEqual(self.viewer.setupIntArray  .call_count, 0)
+        self.assertEqual(self.viewer.setupFloatArray.call_count, 0)
+        self.viewer.setupBoolArray.assert_called_once_with(self.viewer.bindings['a_bool'], self.uniform)
+        self.assertEqual(self.viewer.setupVec2Array .call_count, 0)
+        self.assertEqual(self.viewer.setupVec3Array .call_count, 0)
+        self.assertEqual(self.viewer.setupVec4Array .call_count, 0)
+        self.assertEqual(self.viewer.bindings['a_bool']['type'], 'bool')
+        
+    def test_type_is_vec2(self):
+        self.uniform.gdict['name'] = 'a_vec'
+        self.uniform.gdict['type'] = 'vec2'
+        self.viewer.createArrayBinding(self.uniform)
+        self.assertEqual(self.viewer.setupIntArray  .call_count, 0)
+        self.assertEqual(self.viewer.setupFloatArray.call_count, 0)
+        self.assertEqual(self.viewer.setupBoolArray .call_count, 0)
+        self.viewer.setupVec2Array.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
+        self.assertEqual(self.viewer.setupVec3Array .call_count, 0)
+        self.assertEqual(self.viewer.setupVec4Array .call_count, 0)
+        self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec2')
+        
+    def test_type_is_vec3(self):
+        self.uniform.gdict['name'] = 'a_vec'
+        self.uniform.gdict['type'] = 'vec3'
+        self.viewer.createArrayBinding(self.uniform)
+        self.assertEqual(self.viewer.setupIntArray  .call_count, 0)
+        self.assertEqual(self.viewer.setupFloatArray.call_count, 0)
+        self.assertEqual(self.viewer.setupBoolArray .call_count, 0)
+        self.assertEqual(self.viewer.setupVec2Array .call_count, 0)
+        self.viewer.setupVec3Array.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
+        self.assertEqual(self.viewer.setupVec4Array .call_count, 0)
+        self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec3')
+        
+    def test_type_is_vec4(self):
+        self.uniform.gdict['name'] = 'a_vec'
+        self.uniform.gdict['type'] = 'vec4'
+        self.viewer.createArrayBinding(self.uniform)
+        self.assertEqual(self.viewer.setupIntArray  .call_count, 0)
+        self.assertEqual(self.viewer.setupFloatArray.call_count, 0)
+        self.assertEqual(self.viewer.setupBoolArray .call_count, 0)
+        self.assertEqual(self.viewer.setupVec2Array .call_count, 0)
+        self.assertEqual(self.viewer.setupVec3Array .call_count, 0)
+        self.viewer.setupVec4Array.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
+        self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec4')
         
 class TestStaticFunctions(BaseCase):
 
