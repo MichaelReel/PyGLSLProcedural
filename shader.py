@@ -63,11 +63,11 @@ class Shader(object):
             buffer = create_string_buffer(temp.value)
             # retrieve the log text
             glGetShaderInfoLog(shader, temp, None, buffer)
-            # print the log to the console
-            print (buffer.value)
+            # Chuck an error up so we don't attempt linking
+            raise ValueError(buffer.value)
         else:
             # all is well, so attach the shader to the program
-            glAttachShader(self.handle, shader);
+            glAttachShader(self.handle, shader)
 
     def link(self):
         # link the program

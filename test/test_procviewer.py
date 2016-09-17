@@ -1,23 +1,8 @@
-import unittest, sys, re
-try:
-    from unittest.mock import create_autospec
-except ImportError:
-    from mock import create_autospec
-
-# Deal with v2 and v3 differences in int types
-if sys.version_info < (3,):
-    integer_types = (int, long,)
-else:
-    integer_types = (int,)
+import unittest, sys
+from test_base import *
 
 # Pull in the procviewer file for testing
-sys.path.append("..")
 from procviewer import *
-
-class BaseCase(unittest.TestCase):
-
-    def suite():
-        return unittest.TestLoader().loadTestsFromTestCase(__class__)
 
 class TestTextureShaderInitBlank(BaseCase):
 

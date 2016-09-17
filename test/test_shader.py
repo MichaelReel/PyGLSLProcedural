@@ -1,24 +1,14 @@
 import unittest, sys, io
-
-# Deal with v2 and v3 differences in int types
-if sys.version_info < (3,):
-    integer_types = (int, long,)
-else:
-    integer_types = (int,)
+from test_base import *
+from pyglet import gl
 
 # Pull in the shader file for testing
-sys.path.append("..")
 from shader import Shader
 
 vertexCode = ' '.join(io.open('blank/blank_shader.v.glsl'))
 fragmentCode = ' '.join(io.open('blank/blank_shader.f.glsl'))
 
-class ShaderTestBase(unittest.TestCase):
-
-    def suite():
-        return unittest.TestLoader().loadTestsFromTestCase(__class__)
-
-class TestShaderInit(ShaderTestBase):
+class TestShaderInit(BaseCase):
 
     def setUp(self):
         self.shader = Shader(vertexCode, fragmentCode)
@@ -30,7 +20,15 @@ class TestShaderInit(ShaderTestBase):
     def test_shader_is_linked(self):
         self.assertTrue(self.shader.linked)
 
-class TestShaderLink(ShaderTestBase):
+class TestCreateShader(BaseCase):
+
+    def setUp(self):
+        self.shader = Shader(vertexCode, fragmentCode)
+
+    def test_compile_failure(self):
+        self.assertRaises(ValueError, self.shader.createShader, "garbage;", gl.GL_VERTEX_SHADER)
+
+class TestShaderLink(BaseCase):
 
     def test_bad_shaders_link(self):
         shader = Shader("", "")
@@ -42,7 +40,7 @@ class TestShaderLink(ShaderTestBase):
         shader.link()
         self.assertTrue(shader.linked)
 
-class TestShaderBind(ShaderTestBase):
+class TestShaderBind(BaseCase):
 
     def setUp(self):
         self.shader = Shader(vertexCode, fragmentCode)
@@ -53,7 +51,7 @@ class TestShaderBind(ShaderTestBase):
     def test_unbind(self):
         self.shader.unbind()
 
-class TestShaderUniformFloat(ShaderTestBase):
+class TestShaderUniformFloat(BaseCase):
 
     def setUp(self):
         self.shader = Shader(vertexCode, fragmentCode)
@@ -77,7 +75,7 @@ class TestShaderUniformFloat(ShaderTestBase):
     def tearDown(self):
         self.shader.unbind()
 
-class TestShaderUniformInt(ShaderTestBase):
+class TestShaderUniformInt(BaseCase):
 
     def setUp(self):
         self.shader = Shader(vertexCode, fragmentCode)
@@ -101,7 +99,7 @@ class TestShaderUniformInt(ShaderTestBase):
     def tearDown(self):
         self.shader.unbind()
 
-class TestShaderUniformMatrix(ShaderTestBase):
+class TestShaderUniformMatrix(BaseCase):
 
     def setUp(self):
         self.shader = Shader(vertexCode, fragmentCode)
