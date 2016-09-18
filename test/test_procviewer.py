@@ -30,13 +30,6 @@ class TestTextureShaderInitBlank(BaseCase):
         # Check the dictionary is empty
         self.assertFalse(self.shader.bindings)
 
-    def tearDown(self):
-        # Remove any json for blank
-        try:
-            os.remove("blank/blank_shader.bindings.json")
-        except OSError:
-            pass
-
 loadfile = "bindings/loadkey.json"
 savefile = "bindings/savekey.json"
 
@@ -76,6 +69,7 @@ class TestSaveKeyBindings(BaseCase):
             self.assertEqual(loadBindings, saveBindings)
 
     def tearDown(self):
+        super(TestSaveKeyBindings, self).tearDown()
         try:
             os.remove(savefile)
         except OSError:
@@ -527,6 +521,80 @@ class TestSetupVec(BaseCase):
         # Parsing not done yet, will update here when implementing
         self.viewer.setupVec4(self.binding, self.uniform)
         self.assertEqual(self.binding['default'], (0.0, 0.0, 0.0, 0.0))
+
+class TestSetupIntArray(BaseCase):
+
+    class mockUniform(object):
+        def __init__(self):
+            self.gdict = {}
+
+        def group(self, key):
+            if key in self.gdict:
+                return self.gdict[key]
+            else:
+                return None
+
+    def setUp(self):
+        self.viewer = TextureShader("blank/blank_shader")
+        self.uniform = TestSetupIntArray.mockUniform()
+        self.binding = {}
+
+    def test_no_linesize_no_permutation(self):
+        self.uniform.gdict['size'] = 5
+        self.viewer.setupIntArray(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], [0, 1, 2, 3, 4])
+        self.assertEqual(self.binding['shuffle_key'], 113) # Q
+
+    def test_with_linesize(self):
+        self.uniform.gdict['size'] = 10
+        self.uniform.gdict['line'] = 5
+        self.viewer.setupIntArray(self.binding, self.uniform)
+        self.assertEqual(self.binding['loop'], 5)
+        self.assertEqual(self.binding['default'], [0, 1, 2, 3, 4, 0, 1, 2, 3, 4])
+        self.assertEqual(self.binding['shuffle_key'], 113) # Q
+
+    def test_with_permutation_size_unseeded(self):
+        self.uniform.gdict['size'] = 10
+        self.uniform.gdict['perm'] = 5
+        self.viewer.setupIntArray(self.binding, self.uniform)
+        self.assertEqual(self.binding['loop'], 5)
+        self.assertEqual(self.binding['seed'], 1)
+        self.assertEqual(sorted(self.binding['default'][:5]), list(range(0, 5)))
+        self.assertEqual(self.binding['default'][:5], self.binding['default'][5:])
+        self.assertEqual(self.binding['shuffle_key'], 113) # Q
+
+    def test_with_permutation_size_seeded(self):
+        self.uniform.gdict['size'] = 10
+        self.uniform.gdict['perm'] = 5
+        self.uniform.gdict['seed'] = 50
+        self.viewer.setupIntArray(self.binding, self.uniform)
+        self.assertEqual(self.binding['loop'], 5)
+        self.assertEqual(self.binding['seed'], 50)
+        self.assertEqual(sorted(self.binding['default'][:5]), list(range(0, 5)))
+        self.assertEqual(self.binding['default'][:5], self.binding['default'][5:])
+        self.assertEqual(self.binding['shuffle_key'], 113) # Q
+
+class TestUnimplementedSetupArrayMethods(BaseCase):
+
+    def setUp(self):
+        self.viewer = TextureShader("blank/blank_shader")
+        self.uniform = TestSetupIntArray.mockUniform()
+        self.binding = {}
+
+    def test_float_array(self):
+        self.assertRaises(NotImplementedError, self.viewer.setupFloatArray, self.binding, self.uniform)
+        
+    def test_bool_array(self):
+        self.assertRaises(NotImplementedError, self.viewer.setupBoolArray, self.binding, self.uniform)
+        
+    def test_vec2_array(self):
+        self.assertRaises(NotImplementedError, self.viewer.setupVec2Array, self.binding, self.uniform) 
+        
+    def test_vec3_array(self):
+        self.assertRaises(NotImplementedError, self.viewer.setupVec3Array, self.binding, self.uniform) 
+        
+    def test_vec4_array(self):
+        self.assertRaises(NotImplementedError, self.viewer.setupVec4Array, self.binding, self.uniform) 
        
 class TestStaticFunctions(BaseCase):
 

@@ -1,5 +1,6 @@
 import unittest
 import sys
+import os
 
 # Include upper level files for testing
 sys.path.append("..")
@@ -19,5 +20,14 @@ else:
 # Root case for all test cases
 class BaseCase(unittest.TestCase):
     """Root case for all test cases"""
+
     def suite():
         return unittest.TestLoader().loadTestsFromTestCase(__class__)
+
+    def tearDown(self):
+        """Base tear down, don't leave test files lying around"""
+        # Remove any json for blank
+        try:
+            os.remove("blank/blank_shader.bindings.json")
+        except OSError:
+            pass
