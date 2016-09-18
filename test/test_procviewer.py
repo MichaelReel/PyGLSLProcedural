@@ -436,6 +436,98 @@ class TestSetupInt(BaseCase):
         self.assertEqual(self.binding['default'], 100)
         self.assertEqual(self.binding['diff'], 20)
 
+class TestSetupFloat(BaseCase):
+
+    class mockUniform(object):
+        def __init__(self):
+            self.gdict = {}
+
+        def group(self, key):
+            if key in self.gdict:
+                return self.gdict[key]
+            else:
+                return None
+
+    def setUp(self):
+        self.viewer = TextureShader("blank/blank_shader")
+        self.uniform = TestSetupFloat.mockUniform()
+        self.binding = {}
+
+    def test_no_default_no_diff(self):
+        self.viewer.setupFloat(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], 0)
+        self.assertEqual(self.binding['diff'], 1)
+        # Keys should be bound to the first 2 off the list
+        self.assertEqual(self.binding['inc_key'], 113) # Q
+        self.assertEqual(self.binding['dec_key'], 97)  # A
+
+    def test_with_default_and_diff(self):
+        self.uniform.gdict['default'] = 100
+        self.uniform.gdict['diff'] = 20
+        self.viewer.setupFloat(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], 100)
+        self.assertEqual(self.binding['diff'], 20)
+
+class TestSetupBool(BaseCase):
+
+    class mockUniform(object):
+        def __init__(self):
+            self.gdict = {}
+
+        def group(self, key):
+            if key in self.gdict:
+                return self.gdict[key]
+            else:
+                return None
+
+    def setUp(self):
+        self.viewer = TextureShader("blank/blank_shader")
+        self.uniform = TestSetupBool.mockUniform()
+        self.binding = {}
+
+    def test_no_default(self):
+        self.viewer.setupBool(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], False)
+        # Key should be bound to the first off the list
+        self.assertEqual(self.binding['toggle_key'], 113) # Q
+
+    def test_with_default(self):
+        self.uniform.gdict['default'] = True
+        self.viewer.setupBool(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], True)
+
+class TestSetupVec(BaseCase):
+
+    class mockUniform(object):
+        def __init__(self):
+            self.gdict = {}
+
+        def group(self, key):
+            if key in self.gdict:
+                return self.gdict[key]
+            else:
+                return None
+
+    def setUp(self):
+        self.viewer = TextureShader("blank/blank_shader")
+        self.uniform = TestSetupVec.mockUniform()
+        self.binding = {}
+
+    def test_vec2(self):
+        # Parsing not done yet, will update here when implementing
+        self.viewer.setupVec2(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], (0.0, 0.0))
+
+    def test_vec3(self):
+        # Parsing not done yet, will update here when implementing
+        self.viewer.setupVec3(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], (0.0, 0.0, 0.0))
+
+    def test_vec4(self):
+        # Parsing not done yet, will update here when implementing
+        self.viewer.setupVec4(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], (0.0, 0.0, 0.0, 0.0))
+       
 class TestStaticFunctions(BaseCase):
 
     from pyglet.window import key
