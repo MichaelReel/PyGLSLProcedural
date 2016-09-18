@@ -321,9 +321,6 @@ class TestCreateArrayBinding(BaseCase):
         def group(self, key):
             return self.gdict[key]
 
-        def groupdict(self):
-            return self.gdict
-
     def setUp(self):
         self.viewer = TextureShader("blank/blank_shader")
         self.viewer.setupIntArray   = create_autospec(self.viewer.setupIntArray)
@@ -406,7 +403,39 @@ class TestCreateArrayBinding(BaseCase):
         self.assertEqual(self.viewer.setupVec3Array .call_count, 0)
         self.viewer.setupVec4Array.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
         self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec4')
-        
+
+class TestSetupInt(BaseCase):
+
+    class mockUniform(object):
+        def __init__(self):
+            self.gdict = {}
+
+        def group(self, key):
+            if key in self.gdict:
+                return self.gdict[key]
+            else:
+                return None
+
+    def setUp(self):
+        self.viewer = TextureShader("blank/blank_shader")
+        self.uniform = TestSetupInt.mockUniform()
+        self.binding = {}
+
+    def test_no_default_no_diff(self):
+        self.viewer.setupInt(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], 0)
+        self.assertEqual(self.binding['diff'], 1)
+        # Keys should be bound to the first 2 off the list
+        self.assertEqual(self.binding['inc_key'], 113) # Q
+        self.assertEqual(self.binding['dec_key'], 97)  # A
+
+    def test_with_default_and_diff(self):
+        self.uniform.gdict['default'] = 100
+        self.uniform.gdict['diff'] = 20
+        self.viewer.setupInt(self.binding, self.uniform)
+        self.assertEqual(self.binding['default'], 100)
+        self.assertEqual(self.binding['diff'], 20)
+
 class TestStaticFunctions(BaseCase):
 
     from pyglet.window import key
