@@ -47,9 +47,6 @@ class TextureShader(Shader):
         found = found | self.checkBooleanKeyBindingsFromShader(shader)
         found = found | self.checkArrayKeyBindingsFromShader(shader)
 
-        if not found:
-            print('No uniforms defined in shader {}'.format(name))
-
         return found
 
     def checkNumericKeyBindingsFromShader(self, shader):
@@ -263,21 +260,24 @@ class TextureShader(Shader):
                 break
 
     def bindingTrigger(self, symbol):
+        """Return True if trigger succeeded, False if not bound, ValueError if key is used but not bound"""
         if symbol not in self.usedKeys:
-            return
+            return False
         binding = self.usedKeys[symbol]
         if 'toggle_key' in binding and binding['toggle_key'] == symbol:
             binding['default'] = not binding['default']
-            return
+            return True
         if 'inc_key' in binding and binding['inc_key'] == symbol:
             binding['default'] += binding['diff']
-            return
+            return True
         if 'dec_key'in binding and binding['dec_key'] == symbol:
             binding['default'] -= binding['diff']
-            return
+            return True
         if 'shuffle_key' in binding and binding['shuffle_key'] == symbol:
             updatePermutation(binding)
-            return
+            return True
+        # Key was bound, but not to any action
+        raise ValueError("symbol {} used but not bound to an action".format(symbol))
 
     def setUniforms(self):
         for name in self.bindings:
@@ -331,15 +331,15 @@ class TextureShader(Shader):
 
     def mouseDrag(self, dx, dy):
         zoom = 1
-        if hasattr(self, 'mouseScroll'):
+        if getattr(self, 'mouseScroll', None):
             zoom = self.mouseScroll['default']
-        if hasattr(self, 'mouseX'):
-            self.mouseX['default'] -= dx * zoom # * self.mouseX['diff']
-        if hasattr(self, 'mouseY'):
-            self.mouseY['default'] -= dy * zoom # * self.mouseY['diff']
+        if getattr(self, 'mouseX', None):
+            self.mouseX['default'] -= dx * zoom
+        if getattr(self, 'mouseY', None):
+            self.mouseY['default'] -= dy * zoom
 
     def mouseScrollY(self, scroll_y):
-        if hasattr(self, 'mouseScroll'):
+        if getattr(self, 'mouseScroll', None):
             self.mouseScroll['default'] -= scroll_y * self.mouseScroll['diff']
 
 def preferredKeyOrder():
