@@ -9,9 +9,9 @@ import ctypes
 # (see https://swiftcoder.wordpress.com/2008/12/19/simple-glsl-wrapper-for-pyglet/)
 
 from pyglet.gl import *
-from ctypes import c_char_p, cast, pointer, POINTER, c_char, c_int, byref, create_string_buffer, c_float
+from ctypes import c_char_p, cast, pointer, POINTER, c_char, c_int, byref, create_string_buffer, c_float, c_long
 
-class Shader:
+class Shader(object):
     # vert, frag and geom take arrays of source strings
     # the arrays will be concattenated into one string by OpenGL
     def __init__(self, vert = [], frag = [], geom = []):
@@ -63,11 +63,11 @@ class Shader:
             buffer = create_string_buffer(temp.value)
             # retrieve the log text
             glGetShaderInfoLog(shader, temp, None, buffer)
-            # print the log to the console
-            print (buffer.value)
+            # Chuck an error up so we don't attempt linking
+            raise ValueError(buffer.value)
         else:
             # all is well, so attach the shader to the program
-            glAttachShader(self.handle, shader);
+            glAttachShader(self.handle, shader)
 
     def link(self):
         # link the program
@@ -103,6 +103,7 @@ class Shader:
     # upload a floating point uniform
     # this program must be currently bound
     def uniformf(self, name, *vals):
+        data_loc = glGetUniformLocation(self.handle, name.encode())
         # check there are 1-4 values
         if len(vals) in range(1, 5):
             # select the correct function
@@ -111,15 +112,15 @@ class Shader:
                 3 : glUniform3f,
                 4 : glUniform4f
                 # retrieve the uniform location, and set
-            }[len(vals)](glGetUniformLocation(self.handle, name.encode()), *vals)
+            }[len(vals)](data_loc, *vals)
         else:
             # Allow data arrays greater than 4 values
-            data_loc = glGetUniformLocation(self.handle, name.encode())
-            glUniform1fv(data_loc, len(vals), (gl.c_float * len(vals))(*vals))
+            glUniform1fv(data_loc, len(vals), (c_float * len(vals))(*vals))
 
     # upload an integer uniform
     # this program must be currently bound
     def uniformi(self, name, *vals):
+        data_loc = glGetUniformLocation(self.handle, name.encode())
         # check there are 1-4 values
         if len(vals) in range(1, 5):
             # select the correct function
@@ -128,17 +129,16 @@ class Shader:
                 3 : glUniform3i,
                 4 : glUniform4i
                 # retrieve the uniform location, and set
-            }[len(vals)](glGetUniformLocation(self.handle, name.encode()), *vals)
+            }[len(vals)](data_loc, *vals)
         else:
             # Allow data arrays greater than 4 values
-            data_loc = glGetUniformLocation(self.handle, name.encode())
-            glUniform1iv(data_loc, len(vals), (gl.c_long * len(vals))(*vals))
+            glUniform1iv(data_loc, len(vals), (c_long * len(vals))(*vals))
 
     # upload a uniform matrix
     # works with matrices stored as lists,
     # as well as euclid matrices
     def uniform_matrixf(self, name, mat):
         # obtain the uniform location
-        loc = glGetUniformLocation(self.handle, name)
+        loc = glGetUniformLocation(self.handle, name.encode())
         # upload the 4x4 floating point matrix
         glUniformMatrix4fv(loc, 1, False, (c_float * 16)(*mat))
