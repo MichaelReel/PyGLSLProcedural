@@ -106,7 +106,8 @@ if not pyglet.gl.gl_info.have_extension('GL_EXT_gpu_shader4'):
 
 # window = TextureWindow('perlin_reference/proc_shader')
 # window = TextureWindow('tiled/tile_shader')
-window = TextureWindow('scrappy_grid/scrap_grid')
+# window = TextureWindow('scrappy_grid/scrap_grid')
+window = TextureWindow('blobs/blobs_shader')
 # window = TextureWindow('spike/working_shader')
 
 pyglet.app.run()
