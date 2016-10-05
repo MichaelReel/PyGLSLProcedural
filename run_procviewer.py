@@ -27,7 +27,7 @@ class TextureWindow(pyglet.window.Window):
     
     def updateStatusLabels(self):
         self.statusLabels = []
-        y = 0
+        y = 20
         label = 0
         for labelText in self.textureShader.getStatuses():
             # Create a new label if we need one (suddenly)

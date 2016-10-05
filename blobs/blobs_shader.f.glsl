@@ -6,15 +6,15 @@
 #define p_range 256.0
 
 uniform int p[512];               // permutation 256
-uniform float x          = -5.4;  // diff 0.1
-uniform float y          = -5.4;  // diff 0.1
-uniform float zmax       = 1.0;   // diff 0.1
-uniform float zmin       = 0.0;   // diff 0.1
-uniform float zdiff      = 0.01;  // diff 0.01
-uniform float zoom       = 0.005; // diff 0.0005
+uniform float x          = -5.54; // diff 0.1
+uniform float y          = -5.54; // diff 0.1
+uniform float zmax       = 1.0;   // diff 0.01
+uniform float zmin       = 0.0;   // diff 0.01
+uniform int levels       = 5; 
+uniform float zoom       = 0.0065;// diff 0.0005
 uniform int octives      = 9;
 uniform float freq       = 0.73;  // diff 0.01
-uniform float threshold  = 0.50;  // diff 0.01 
+uniform float threshold  = 0.75;  // diff 0.01 
 
 float getSumFreq(float x, float y, float z);
 float getHash(float x, float y, float z); 
@@ -24,18 +24,19 @@ float grad(int hsh, float x, float y, float z);
 
 void main() {
 
-  // getHash is not normalised to 0.0 <-> 1.0
-  // it's really somewhere between -1.0 and +1.0
+
   float fragX = x + gl_FragCoord[0] * zoom;
   float fragY = y + gl_FragCoord[1] * zoom;
 
   float sumFreq = 0.0;
+  float zdiff = 1.0;
+  if (levels > 0) zdiff = 1.0 / levels;
   float z = zmax + zdiff;
 
   do {
     z -= zdiff;
-    sumFreq = (getSumFreq(fragX, fragY, z) * 0.5) + 0.5;
-  } while (sumFreq < threshold && z > zmin);
+    sumFreq = (getSumFreq(fragX, fragY, z) * (0.5 * zmax)) + (zmin + (0.5 * zmax));
+  } while (sumFreq < (threshold * z) && z > zmin);
 
   gl_FragColor = vec4(z, 0.0, 1.0, 1.0);
   
