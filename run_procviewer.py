@@ -104,6 +104,8 @@ if not pyglet.gl.gl_info.have_extension('GL_EXT_gpu_shader4'):
     print("GL_EXT_gpu_shader4 is not supported in this environment, but is required by the shader. "
           "Display may be corrupted!")
 
+# Comment all but one of the following calls to TextureWindow to select a shader:
+
 # window = TextureWindow('perlin_reference/proc_shader')
 # window = TextureWindow('tiled/tile_shader')
 # window = TextureWindow('scrappy_grid/scrap_grid')
