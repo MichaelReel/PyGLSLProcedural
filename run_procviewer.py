@@ -1,8 +1,8 @@
 from __future__ import print_function
-from procviewer import TextureShader
+from procviewer import ShaderController
 from pyglet.gl import *
 from random import Random
-import pyglet
+import pyglet, os, time
 
 class TextureWindow(pyglet.window.Window):
 
@@ -10,7 +10,7 @@ class TextureWindow(pyglet.window.Window):
         self.w = 512
         self.h = 512
 
-        self.textureShader = TextureShader(shader_path)
+        self.textureShader = ShaderController(shader_path)
         super(TextureWindow, self).__init__(caption = shader_path, width=self.w, height=self.h)
 
         self.createKeyHelpLabels()
@@ -18,7 +18,7 @@ class TextureWindow(pyglet.window.Window):
     def createKeyHelpLabels(self):
         self.helpLabels = []
         y = self.height
-        for labelText in self.textureShader.getHtmlHelps():
+        for labelText in self.textureShader.get_html_help():
             self.helpLabels.append(pyglet.text.HTMLLabel(
                     "<font face='Courier New' color='white'>{}</font>".format(labelText),
                     x=0, y=y,
@@ -29,7 +29,7 @@ class TextureWindow(pyglet.window.Window):
         self.statusLabels = []
         y = 20
         label = 0
-        for labelText in self.textureShader.getStatuses():
+        for labelText in self.textureShader.get_statuses():
             # Create a new label if we need one (suddenly)
             if label >= len(self.statusLabels):
                 self.statusLabels.append(pyglet.text.HTMLLabel("",
@@ -41,13 +41,13 @@ class TextureWindow(pyglet.window.Window):
             label += 1
 
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-        self.textureShader.mouseDrag(dx, dy)
+        self.textureShader.mouse_drag(dx, dy)
 
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        self.textureShader.mouseScrollY(scroll_y)
+        self.textureShader.mouse_scroll_y(scroll_y)
 
     def on_key_release(self, symbol, modifiers):
-        self.textureShader.bindingTrigger(symbol)
+        self.textureShader.binding_trigger(symbol)
 
     def saveFromShader(self):
         a = (GLubyte * (4 * self.w * self.h))(0)
@@ -75,7 +75,7 @@ class TextureWindow(pyglet.window.Window):
 
         self.textureShader.bind()
 
-        self.textureShader.setUniforms()
+        self.textureShader.set_uniforms()
 
         glBegin(GL_QUADS)
         glVertex2i(-1, -1)
@@ -109,7 +109,7 @@ if not pyglet.gl.gl_info.have_extension('GL_EXT_gpu_shader4'):
 # window = TextureWindow('perlin_reference/proc_shader')
 # window = TextureWindow('tiled/tile_shader')
 # window = TextureWindow('scrappy_grid/scrap_grid')
-window = TextureWindow('blobs/blobs_shader')
-# window = TextureWindow('spike/working_shader')
+# window = TextureWindow('blobs/blobs_shader')
+window = TextureWindow('spike/working_shader')
 
 pyglet.app.run()

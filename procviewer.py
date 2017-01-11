@@ -1,269 +1,297 @@
-from __future__ import print_function
-from shader import Shader
-import io, os, json, re
-from pyglet.window import key
-from random import Random
+''' This contains the classes and functions required to parse a shader file
+    and generate key bindings to provide some key and mouse controls '''
 
-class TextureShader(Shader):
+from __future__ import print_function
+import io
+import os
+import json
+import re
+from random import Random
+from pyglet.window import key
+from shader import Shader
+
+class ShaderController(Shader):
+    ''' This class provides a control binding wrapper to a GLSL shader'''
+
     def __init__(self, shader_path):
-    
         # Load shader code
-        vsPath = '%s.v.glsl' % shader_path
-        fsPath = '%s.f.glsl' % shader_path
-        with io.open(vsPath) as vs, io.open(fsPath) as fs:
-            vertexShader = ' '.join(vs)
-            fragmentShader = ' '.join(fs)
-            
+        vspath = '%s.v.glsl' % shader_path
+        fspath = '%s.f.glsl' % shader_path
+        with io.open(vspath) as vstrm, io.open(fspath) as fstrm:
+            vertexshader = ' '.join(vstrm)
+            fragmentshader = ' '.join(fstrm)
+
         # Load and update key bindings
-        self.loadKeyBindings("{}.bindings.json".format(shader_path))
-        self.checkKeyBindingsFromShaderUniforms(vertexShader, "vertex")
-        self.checkKeyBindingsFromShaderUniforms(fragmentShader, "fragment")
-        self.saveKeyBindings("{}.bindings.json".format(shader_path))
-        self.bindMostObviousMouseControls()
+        self.used_keys = {}
+        self.load_key_bindings("{}.bindings.json".format(shader_path))
+        self.parse_bindings_from_uniforms(vertexshader)
+        self.parse_bindings_from_uniforms(fragmentshader)
+        self.save_key_bindings("{}.bindings.json".format(shader_path))
+        self.bind_mouse_controls()
 
         # Create the shader
-        super(TextureShader, self).__init__(vertexShader, fragmentShader)
+        super(ShaderController, self).__init__(vertexshader, fragmentshader)
 
-    def loadKeyBindings(self, keyBindingsFile):
+    def load_key_bindings(self, file):
         ''' Load pre-saved key bindings if they exist '''
-        if (os.path.isfile(keyBindingsFile)):
-            with open(keyBindingsFile, "r") as jsonFile:
-                self.bindings = json.load(jsonFile)
+        if os.path.isfile(file):
+            with open(file, "r") as json_file:
+                self.bindings = json.load(json_file)
         else:
             self.bindings = {}
-        self.setupUsedKeys()
+        self.setup_used_keys()
 
-    def saveKeyBindings(self, keyBindingsFiles):
+    def save_key_bindings(self, key_bindings_files):
         ''' Save the latest bindings to file '''
-        with open(keyBindingsFiles, "w") as jsonFile:
-            json.dump(self.bindings, jsonFile)
+        with open(key_bindings_files, "w") as json_file:
+            json.dump(self.bindings, json_file)
 
-    def checkKeyBindingsFromShaderUniforms(self, shader, name=""):
+    def parse_bindings_from_uniforms(self, shader):
         ''' Parse the shader and look for unbound uniforms to bind '''
-        
         found = False
 
-        found = found | self.checkNumericKeyBindingsFromShader(shader)
-        found = found | self.checkBooleanKeyBindingsFromShader(shader)
-        found = found | self.checkArrayKeyBindingsFromShader(shader)
+        found = found | self.parse_numeric_bindings(shader)
+        found = found | self.parse_boolean_bindings(shader)
+        found = found | self.parse_array_bindings(shader)
 
         return found
 
-    def checkNumericKeyBindingsFromShader(self, shader):
+    def parse_numeric_bindings(self, shader):
+        '''Parse the shader and for each scalar uniform found, try to create a keybinding'''
         found = False
 
         # build a regex for finding int and float lines:
-        s    = r'(?:\s*)'                             # optional white space
-        sm   = r'(?:\s+)'                             # manditory white space
-        type = r'(?P<type>(?:int|float))'             # var type
+        ows = r'(?:\s*)'                              # optional white space
+        mws = r'(?:\s+)'                              # manditory white space
+        typ = r'(?P<type>(?:int|float))'              # var type
         name = r'(?P<name>\w+)'                       # var name
         defv = r'(?P<default>-?[0-9]+(?:.[0-9]+)?)?'  # optional default value
         diff = r'(?P<diff>-?[0-9]+(?:.[0-9]+)?)?'     # optional diff value
 
-        pattern = re.compile(r'uniform' + sm + type + sm + name + s + r'=?' + s + defv + s + r';' + r'(?:'+ s + r'(?://)*' + s + r'diff' + sm + diff + r')?')
+        pattern = re.compile(r'uniform' + mws + typ + mws + name + ows + r'=?' +\
+                             ows + defv + ows + r';' +\
+                             r'(?:'+ ows + r'(?://)*' + ows + r'diff' + mws + diff + r')?')
         for uniform in re.finditer(pattern, shader):
-            self.checkShaderBinding(uniform)
+            self.update_binding(uniform)
             found = True
 
         return found
 
-    def checkBooleanKeyBindingsFromShader(self, shader):
+    def parse_boolean_bindings(self, shader):
+        '''Parse the shader and for each boolean uniform found, try to create a keybinding'''
         found = False
 
         # build a regex for finding int and float lines:
-        s    = r'(?:\s*)'                             # optional white space
-        sm   = r'(?:\s+)'                             # manditory white space
-        type = r'(?P<type>bool)'                      # var type
+        ows = r'(?:\s*)'                              # optional white space
+        mws = r'(?:\s+)'                              # manditory white space
+        typ = r'(?P<type>bool)'                       # var type
         name = r'(?P<name>\w+)'                       # var name
         defv = r'(?P<default>\w+)?'                   # optional default value
 
-        pattern = re.compile(r'uniform' + sm + type + sm + name + s + r'=?' + s + defv + s + r';')
+        pattern = re.compile(r'uniform' + mws + typ + mws + name + ows + r'=?' +\
+                             ows + defv + ows + r';')
         for uniform in re.finditer(pattern, shader):
-            self.checkShaderBinding(uniform)
+            self.update_binding(uniform)
             found = True
 
         return found
 
-    def checkArrayKeyBindingsFromShader(self, shader):
+    def parse_array_bindings(self, shader):
+        '''Parse the shader and for each array uniform found, try to create a keybinding'''
         found = False
 
         # build a regex for finding int and float lines:
-        s        = r'(?:\s*)'                                         # optional white space
-        sm       = r'(?:\s+)'                                         # manditory white space
-        c        = r'(?://+)' + s                                     # comment
-        type     = r'uniform' + sm + r'(?P<type>(?:int|float))' + sm  # var type
-        name     = r'(?P<name>\w+)' + s                               # var name
-        size     = r'\[(?P<size>[0-9]+)\]' + s                        # array size
-        seed     = r'(?:seed' + s + r'(?P<seed>\w+)' + s + r')?'      # optional string seed value
-        permSize = r'permutation' + s + r'(?P<perm>[0-9]+)' + s       # optional permutation size value
-        lineSize = c + r'linear' + s + r'(?P<line>[0-9]+)' + s        # optional linear size value
-        regex    = type + name + size + r';' + s + r'(?:'+ c + permSize + seed + r')?' + r'(?:' + lineSize + r')?'
+        ows = r'(?:\s*)'                                              # optional white space
+        mws = r'(?:\s+)'                                              # manditory white space
+        com = r'(?://+)' + ows                                        # comment
+        typ = r'uniform' + mws + r'(?P<type>(?:int|float))' + mws     # var type
+        name = r'(?P<name>\w+)' + ows                                 # var name
+        size = r'\[(?P<size>[0-9]+)\]' + ows                          # array size
+        seed = r'(?:seed' + ows + r'(?P<seed>\w+)' + ows + r')?'      # optional string seed value
+        perm_size = r'permutation' + ows + r'(?P<perm>[0-9]+)' + ows  # optional permutation size
+        line_size = com + r'linear' + ows + r'(?P<line>[0-9]+)' + ows # optional linear size value
+
+        regex = typ + name + size + r';' + ows +\
+                r'(?:'+ com + perm_size + seed + r')?' + r'(?:' + line_size + r')?'
         pattern = re.compile(regex)
 
         for uniform in re.finditer(pattern, shader):
-            self.checkShaderBinding(uniform)
+            self.update_binding(uniform)
             found = True
 
         return found
 
-    def checkShaderBinding(self, uniform):
-        name = uniform.group('name')
-        type = uniform.group('type')
-        print ("{} {}".format(type, name))
+    def update_binding(self, uniform):
+        '''Update existing bindings or create new bindings for unknown uniforms'''
+        var_name = uniform.group('name')
+        var_type = uniform.group('type')
+
         # Check for name in the bindings, and create or update where necessary
-        if name in self.bindings:
+        if var_name in self.bindings:
             # If the type is the same, then leave it unchanged
-            if self.bindings[name]['type'] != type:
+            if self.bindings[var_name]['type'] != var_type:
                 # otherwise, clear and redo
-                del self.bindings[name]
-                self.createBinding(uniform)
+                del self.bindings[var_name]
+                self.create_binding(uniform)
         else:
             # Add (makeup) new keybinding
-            self.createBinding(uniform)
-        
-    def createBinding(self, uniform):
+            self.create_binding(uniform)
+
+    def create_binding(self, uniform):
+        '''Create a key binding for the given uniform'''
+
         # if size is a group, this is from an array check
         if 'size' in uniform.groupdict().keys():
-            self.createArrayBinding(uniform)
+            self.create_array_binding(uniform)
             return
+
         # if size isn't set, it's a primitive
-        name = uniform.group('name')
-        type = uniform.group('type')
-        self.bindings[name] = {}
-        self.bindings[name]['type'] = type
-        {   'int'   : self.setupInt,
-            'float' : self.setupFloat,
-            'bool'  : self.setupBool,
-            'vec2'  : self.setupVec2,
-            'vec3'  : self.setupVec3,
-            'vec4'  : self.setupVec4,
-        }[type](self.bindings[name], uniform)
-        print ("Binding added for uniform '{}', check the json file and update defaults.".format(name))
+        var_name = uniform.group('name')
+        var_type = uniform.group('type')
+        self.bindings[var_name] = {}
+        self.bindings[var_name]['type'] = var_type
+        {'int'   : self.init_int_binding,
+         'float' : self.init_float_binding,
+         'bool'  : self.init_bool_binding,
+         'vec2'  : self.init_vec2_binding,
+         'vec3'  : self.init_vec3_binding,
+         'vec4'  : self.init_vec4_binding,
+        }[var_type](self.bindings[var_name], uniform)
+        print("Binding added for uniform '{}', check the json file and update defaults."
+              .format(var_name))
 
-    def createArrayBinding(self, uniform):
-        name = uniform.group('name')
-        type = uniform.group('type')
-        self.bindings[name] = {}
-        self.bindings[name]['type'] = type
-        {   'int'   : self.setupIntArray,
-            'float' : self.setupFloatArray,
-            'bool'  : self.setupBoolArray,
-            'vec2'  : self.setupVec2Array,
-            'vec3'  : self.setupVec3Array,
-            'vec4'  : self.setupVec4Array,
-        }[type](self.bindings[name], uniform)
-        print ("Binding added for uniform '{}', check the json file and update defaults.".format(name))
-    
-    def setupInt(self, bindingDict, uniform):
+    def create_array_binding(self, uniform):
+        '''Create new binding for modifying arrays'''
+        var_name = uniform.group('name')
+        var_type = uniform.group('type')
+
+        self.bindings[var_name] = {}
+        self.bindings[var_name]['type'] = var_type
+        {'int'   : self.init_int_array_binding,
+         'float' : self.init_float_array_binding,
+         'bool'  : self.init_bool_array_binding,
+         'vec2'  : self.init_vec2_array_binding,
+         'vec3'  : self.init_vec3_array_binding,
+         'vec4'  : self.init_vec4_array_binding,
+        }[var_type](self.bindings[var_name], uniform)
+        print("Binding added for uniform '{}', check the json file and update defaults."
+              .format(var_name))
+
+    def init_int_binding(self, binding_dict, uniform):
         '''Insert a default value and keys for incrementing and decrementing'''
-        self.getUnboundKey(bindingDict, 'inc_key')
-        self.getUnboundKey(bindingDict, 'dec_key')
-        bindingDict['default'] = 0
-        bindingDict['diff'] = 1
+        self.get_unbound_key(binding_dict, 'inc_key')
+        self.get_unbound_key(binding_dict, 'dec_key')
+        binding_dict['default'] = 0
+        binding_dict['diff'] = 1
         if uniform.group('default') != None:
-            bindingDict['default'] = int(uniform.group('default'))
+            binding_dict['default'] = int(uniform.group('default'))
         if uniform.group('diff') != None:
-            bindingDict['diff'] = int(uniform.group('diff'))
+            binding_dict['diff'] = int(uniform.group('diff'))
 
-    def setupFloat(self, bindingDict, uniform):
+    def init_float_binding(self, binding_dict, uniform):
         '''Insert a default value and keys for incrementing and decrementing'''
-        self.getUnboundKey(bindingDict, 'inc_key')
-        self.getUnboundKey(bindingDict, 'dec_key')
-        bindingDict['default'] = 0.0
-        bindingDict['diff'] = 1.0
+        self.get_unbound_key(binding_dict, 'inc_key')
+        self.get_unbound_key(binding_dict, 'dec_key')
+        binding_dict['default'] = 0.0
+        binding_dict['diff'] = 1.0
         if uniform.group('default') != None:
-            bindingDict['default'] = float(uniform.group('default'))
+            binding_dict['default'] = float(uniform.group('default'))
         if uniform.group('diff') != None:
-            bindingDict['diff'] = float(uniform.group('diff'))
+            binding_dict['diff'] = float(uniform.group('diff'))
 
-    def setupBool(self, bindingDict, uniform):
+    def init_bool_binding(self, binding_dict, uniform):
         '''Insert a default value and key for toggling'''
-        self.getUnboundKey(bindingDict, 'toggle_key')
-        bindingDict['default'] = False
+        self.get_unbound_key(binding_dict, 'toggle_key')
+        binding_dict['default'] = False
         if uniform.group('default') != None:
-            bindingDict['default'] = bool(uniform.group('default'))
-    
-    def setupVec2(self, bindingDict, uniform):
+            binding_dict['default'] = bool(uniform.group('default'))
+
+    def init_vec2_binding(self, binding_dict, uniform):
         '''Insert a default value'''
         # Currently Untested. Need to parse the default values correctly for this
-        bindingDict['default'] = (0.0, 0.0)
-        
-    def setupVec3(self, bindingDict, uniform):
+        binding_dict['default'] = (0.0, 0.0)
+
+    def init_vec3_binding(self, binding_dict, uniform):
         '''Insert a default value'''
         # Currently Untested. Need to parse the default values correctly for this
-        bindingDict['default'] = (0.0, 0.0, 0.0)
-        
-    def setupVec4(self, bindingDict, uniform):
+        binding_dict['default'] = (0.0, 0.0, 0.0)
+
+    def init_vec4_binding(self, binding_dict, uniform):
         '''Insert a default value'''
         # Currently Untested. Need to parse the default values correctly for this
-        bindingDict['default'] = (0.0, 0.0, 0.0, 0.0)
-    
-    def setupIntArray(self, bindingDict, uniform):
+        binding_dict['default'] = (0.0, 0.0, 0.0, 0.0)
+
+    def init_int_array_binding(self, binding_dict, uniform):
         '''Insert a default array and key for shuffling'''
-        self.getUnboundKey(bindingDict, 'shuffle_key')
+        self.get_unbound_key(binding_dict, 'shuffle_key')
         size = int(uniform.group('size'))
-        
-        bindingDict['default'] = [x for x in range(size)]
+
+        binding_dict['default'] = [x for x in range(size)]
 
         if uniform.group('line') != None:
-            lineSize = int(uniform.group('line'))
-            bindingDict['loop'] = lineSize
-            bindingDict['default'] = []
+            line_size = int(uniform.group('line'))
+            binding_dict['loop'] = line_size
+            binding_dict['default'] = []
             for i in range(size):
-                bindingDict['default'].append(i % lineSize)
+                binding_dict['default'].append(i % line_size)
         elif uniform.group('perm') != None:
-            permSize = int(uniform.group('perm'))
-            bindingDict['loop'] = permSize
+            perm_size = int(uniform.group('perm'))
+            binding_dict['loop'] = perm_size
             seed = 1
             if uniform.group('seed') != None:
                 seed = int(uniform.group('seed'))
-            bindingDict['seed'] = seed
-            updatePermutation(bindingDict)
+            binding_dict['seed'] = seed
+            update_permutation(binding_dict)
 
-    def setupFloatArray(self, bindingDict, uniform):
-        # '''Insert a default float array'''
-        raise NotImplementedError
-
-    def setupBoolArray(self, bindingDict, uniform):
-        # '''Insert a default boolean array'''
-        raise NotImplementedError
-    
-    def setupVec2Array(self, bindingDict, uniform):
-        # '''Insert a default vec2 array'''
-        raise NotImplementedError
-        
-    def setupVec3Array(self, bindingDict, uniform):
-        # '''Insert a default vec3'''
-        raise NotImplementedError
-        
-    def setupVec4Array(self, bindingDict, uniform):
-        # '''Insert a default vec4 array'''
+    def init_float_array_binding(self, binding_dict, uniform):
+        '''Insert a default float array (To Be Implemented)'''
         raise NotImplementedError
 
-    def setupUsedKeys(self):
-        self.usedKeys = {}
+    def init_bool_array_binding(self, binding_dict, uniform):
+        '''Insert a default boolean array (To Be Implemented)'''
+        raise NotImplementedError
+
+    def init_vec2_array_binding(self, binding_dict, uniform):
+        '''Insert a default vec2 array (To Be Implemented)'''
+        raise NotImplementedError
+
+    def init_vec3_array_binding(self, binding_dict, uniform):
+        '''Insert a default vec3 (To Be Implemented)'''
+        raise NotImplementedError
+
+    def init_vec4_array_binding(self, binding_dict, uniform):
+        '''Insert a default vec4 array (To Be Implemented)'''
+        raise NotImplementedError
+
+    def setup_used_keys(self):
+        '''Use existing bindings to setup key mappings'''
         for binding in self.bindings:
-            self.checkKeyBinding(self.bindings[binding], 'inc_key')
-            self.checkKeyBinding(self.bindings[binding], 'dec_key')
-            self.checkKeyBinding(self.bindings[binding], 'toggle_key')
+            self.check_key_binding(self.bindings[binding], 'inc_key')
+            self.check_key_binding(self.bindings[binding], 'dec_key')
+            self.check_key_binding(self.bindings[binding], 'toggle_key')
 
-    def checkKeyBinding(self, binding, keyUse):
-        if keyUse in binding:
-            self.usedKeys[binding[keyUse]] = binding
+    def check_key_binding(self, binding, key_use):
+        '''Set the key to perform bound operation'''
+        if key_use in binding:
+            self.used_keys[binding[key_use]] = binding
 
-    def getUnboundKey(self, binding, keyUse):
-        # Find the next key name that isn't already used
-        for possibleKey in preferredKeyOrder():
-            if possibleKey not in self.usedKeys:
-                binding[keyUse] = possibleKey
-                self.usedKeys[possibleKey] = binding
+    def get_unbound_key(self, binding, key_use):
+        ''' Find the next preferred key that isn't already used'''
+        for possible_key in preferred_key_order():
+            if possible_key not in self.used_keys:
+                binding[key_use] = possible_key
+                self.used_keys[possible_key] = binding
                 break
 
-    def bindingTrigger(self, symbol):
-        """Return True if trigger succeeded, False if not bound, ValueError if key is used but not bound"""
-        if symbol not in self.usedKeys:
+    def binding_trigger(self, symbol):
+        '''
+        Return True if trigger succeeded,
+        False if not bound,
+        ValueError if key is used but not bound
+        '''
+        if symbol not in self.used_keys:
             return False
-        binding = self.usedKeys[symbol]
+        binding = self.used_keys[symbol]
         if 'toggle_key' in binding and binding['toggle_key'] == symbol:
             binding['default'] = not binding['default']
             return True
@@ -274,18 +302,19 @@ class TextureShader(Shader):
             binding['default'] -= binding['diff']
             return True
         if 'shuffle_key' in binding and binding['shuffle_key'] == symbol:
-            updatePermutation(binding)
+            update_permutation(binding)
             return True
         # Key was bound, but not to any action
         raise ValueError("symbol {} used but not bound to an action".format(symbol))
 
-    def setUniforms(self):
+    def set_uniforms(self):
+        '''Define the uniforms we're going to use in the shader'''
         for name in self.bindings:
-            type = self.bindings[name]['type']
-            value = self.bindings[name]['default']
-            if not isinstance(value, list):
+            var_type = self.bindings[name]['type']
+            var_default = self.bindings[name]['default']
+            if not isinstance(var_default, list):
                 # Wrap scalars
-                value = [value]
+                var_default = [var_default]
             # Switch on type
             {
                 'int'   : self.uniformi,
@@ -297,21 +326,24 @@ class TextureShader(Shader):
                 'ivec2' : self.uniformi,
                 'ivec3' : self.uniformi,
                 'ivec4' : self.uniformi,
-            }[type](name, *value)
+            }[var_type](name, *var_default)
 
-    def getHtmlHelps(self):
+    def get_html_help(self):
+        '''Return html description of key bindings'''
         for name in self.bindings:
             binding = self.bindings[name]
-            keyCode = None
+            key_code = None
             if 'toggle_key' in binding:
-                keyCode = key.symbol_string(binding['toggle_key'])
+                key_code = key.symbol_string(binding['toggle_key'])
             if 'inc_key' in binding:
-                keyCode = key.symbol_string(binding['inc_key']) + "/" + key.symbol_string(binding['dec_key'])
+                key_code = key.symbol_string(binding['inc_key']) +\
+                           "/" + key.symbol_string(binding['dec_key'])
             if 'shuffle_key' in binding:
-                keyCode = key.symbol_string(binding['shuffle_key'])
-            yield "<b>{}</b>:{}".format(keyCode, name)
+                key_code = key.symbol_string(binding['shuffle_key'])
+            yield "<b>{}</b>:{}".format(key_code, name)
 
-    def getStatuses(self):
+    def get_statuses(self):
+        '''Return a html description of the current editable values'''
         for name in self.bindings:
             binding = self.bindings[name]
             status = None
@@ -321,51 +353,65 @@ class TextureShader(Shader):
                 status = "[{},{},{},...,{}]".format(status[0], status[1], status[2], status[-1])
             yield "<b>{}</b>={}".format(name, status)
 
-    def bindMostObviousMouseControls(self):
+    def bind_mouse_controls(self):
+        '''Bind any x, y and zoom uniforms to the mouse'''
         if 'x' in self.bindings:
-            self.mouseX = self.bindings['x']
+            self.mouse_x = self.bindings['x']
         if 'y' in self.bindings:
-            self.mouseY = self.bindings['y']
+            self.mouse_y = self.bindings['y']
         if 'zoom' in self.bindings:
-            self.mouseScroll = self.bindings['zoom']
+            self.mouse_scroll = self.bindings['zoom']
 
-    def mouseDrag(self, dx, dy):
+    def mouse_drag(self, diff_x, diff_y):
+        '''Perform mouse drag action and update uniforms appropriately'''
         zoom = 1
-        if getattr(self, 'mouseScroll', None):
-            zoom = self.mouseScroll['default']
-        if getattr(self, 'mouseX', None):
-            self.mouseX['default'] -= dx * zoom
-        if getattr(self, 'mouseY', None):
-            self.mouseY['default'] -= dy * zoom
+        if getattr(self, 'mouse_scroll', None):
+            zoom = self.mouse_scroll['default']
+        if getattr(self, 'mouse_x', None):
+            self.mouse_x['default'] -= diff_x * zoom
+        if getattr(self, 'mouse_y', None):
+            self.mouse_y['default'] -= diff_y * zoom
 
-    def mouseScrollY(self, scroll_y):
-        if getattr(self, 'mouseScroll', None):
-            self.mouseScroll['default'] -= scroll_y * self.mouseScroll['diff']
+    def mouse_scroll_y(self, scroll_y):
+        '''Perform mouse wheel action and update uniforms appropriately'''
+        if getattr(self, 'mouse_scroll', None):
+            self.mouse_scroll['default'] -= scroll_y * self.mouse_scroll['diff']
 
-def preferredKeyOrder():
+def preferred_key_order():
+    '''
+    Return a list of keys in the the preconfigured 'best' order
+    for use as key bindings
+    '''
     # Remove the particular keys prioritised for use
-    priorityKeys = ["Q","A","W","S","E","D","R","F","T","G","Y","H","U",
-                "J","I","K","O","L","P","Z","X","C","V","B","N","M",
-                "_1","_2","_3","_4","_5","_6","_7","_8","_9","_0"]
+    priority_keys = ["Q", "A", "W", "S", "E", "D", "R", "F", "T", "G", "Y", "H", "U",
+                     "J", "I", "K", "O", "L", "P", "Z", "X", "C", "V", "B", "N", "M",
+                     "_1", "_2", "_3", "_4", "_5", "_6", "_7", "_8", "_9", "_0"]
 
     # clone the full set of key codes, removing the priority keys
     # from the key list and placing them at the front
-    return [getattr(key, letter) for letter in priorityKeys] + list(set(key._key_names) - set(priorityKeys))
+    non_priority_keys = list(get_all_key_names() - set(priority_keys))
+    return [getattr(key, letter) for letter in priority_keys] + non_priority_keys
 
-def updatePermutation(binding):
+
+def get_all_key_names():
+    '''Return the set of all key names'''
+    # pylint: disable=I0011,W0212
+    return set(key._key_names)
+
+def update_permutation(binding):
     '''
     This takes an list of values in binding['default'] and shuffles them.
-    The value in binding['loop'] will cause the reshuffle to only take the 
+    The value in binding['loop'] will cause the reshuffle to only take the
     first 'loop' values in the list, shuffle them, then reproduce the same
     shuffled values (in the same order) over the rest of the list.
     The value in binding['seed'] will determine the random seed used for shuffling.
     '''
-    permSize = binding['loop']
-    seed     = binding['seed']
-    size     = len(binding['default'])
-    rand     = Random(seed)
-    perm     = binding['default'][:permSize]
+    perm_size = binding['loop']
+    seed = binding['seed']
+    size = len(binding['default'])
+    rand = Random(seed)
+    perm = binding['default'][:perm_size]
     rand.shuffle(perm)
     binding['default'] = []
     for i in range(size):
-        binding['default'].append(perm[i % permSize])
+        binding['default'].append(perm[i % perm_size])
