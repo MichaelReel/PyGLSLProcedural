@@ -8,12 +8,13 @@
 uniform int p[512];               // permutation 256
 uniform float x          = -5.4;  // diff 0.1
 uniform float y          = -5.4;  // diff 0.1
-uniform float z          = 0.0;   // diff 0.1
+uniform float zmax       = 1.0;   // diff 0.1
+uniform float zmin       = 0.0;   // diff 0.1
+uniform float zdiff      = 0.01;  // diff 0.01
 uniform float zoom       = 0.005; // diff 0.0005
-uniform float grid       = 0.1;   // diff 0.01
-uniform float gridWeigth = 0.01;  // diff 0.001
 uniform int octives      = 9;
 uniform float freq       = 0.73;  // diff 0.01
+uniform float threshold  = 0.50;  // diff 0.01 
 
 float getSumFreq(float x, float y, float z);
 float getHash(float x, float y, float z); 
@@ -28,19 +29,15 @@ void main() {
   float fragX = x + gl_FragCoord[0] * zoom;
   float fragY = y + gl_FragCoord[1] * zoom;
 
-  float sumFreq = (getSumFreq(fragX, fragY, z) * 0.5) + 0.5;
-  float fb = 0.0; 
+  float sumFreq = 0.0;
+  float z = zmax + zdiff;
 
-  if (abs(mod(fragX, grid)) < gridWeigth || abs(mod(fragY, grid)) < gridWeigth) {
-    if (sumFreq > 0.75) {
-      fb =  1.0;
-    }  
-  } 
+  do {
+    z -= zdiff;
+    sumFreq = (getSumFreq(fragX, fragY, z) * 0.5) + 0.5;
+  } while (sumFreq < threshold && z > zmin);
 
-  float fr = fb;
-  float fg = fb;
-
-  gl_FragColor = vec4(fr, fg, fb, 1.0);
+  gl_FragColor = vec4(z, 0.0, 1.0, 1.0);
   
 }
 
