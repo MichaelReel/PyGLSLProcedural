@@ -1,0 +1,7 @@
+language: python
+python:
+  - "3.5"
+# command to install dependencies
+install: "pip install pyglet"
+# command to run tests
+script: test\test.py
