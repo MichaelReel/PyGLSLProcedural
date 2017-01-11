@@ -79,38 +79,41 @@ class TestCheckKeyBindingsFromShaderUniforms(BaseCase):
 
     def setUp(self):
         self.shader = ShaderController("blank/blank_shader")
-        self.shader.parse_numeric_bindings = create_autospec(self.shader.parse_numeric_bindings, return_value = False)
-        self.shader.parse_boolean_bindings = create_autospec(self.shader.parse_boolean_bindings, return_value = False)
-        self.shader.f   = create_autospec(self.shader.f,   return_value = False)
+        self.shader.parse_numeric_bindings =\
+                create_autospec(self.shader.parse_numeric_bindings, return_value=False)
+        self.shader.parse_boolean_bindings =\
+                create_autospec(self.shader.parse_boolean_bindings, return_value=False)
+        self.shader.parse_array_bindings =\
+                create_autospec(self.shader.parse_array_bindings, return_value=False)
 
     def assertBindingChecksCalled(self, shaderCode):
-        # All subtasks are called once each 
+        # All subtasks are called once each
         # Whether binding found or not
         self.shader.parse_numeric_bindings.assert_called_once_with(shaderCode)
         self.shader.parse_boolean_bindings.assert_called_once_with(shaderCode)
-        self.shader.f.assert_called_once_with(shaderCode)
+        self.shader.parse_array_bindings.assert_called_once_with(shaderCode)
 
     def testFoundNoUniforms(self):
         shaderCode = ""
-        self.assertFalse(self.shader.parse_bindings_from_uniforms(shaderCode, "test"))
+        self.assertFalse(self.shader.parse_bindings_from_uniforms(shaderCode))
         self.assertBindingChecksCalled(shaderCode)
 
     def testFoundNumericUniforms(self):
         shaderCode = ""
         self.shader.parse_numeric_bindings.return_value = True
-        self.assertTrue(self.shader.parse_bindings_from_uniforms(shaderCode, "test"))
+        self.assertTrue(self.shader.parse_bindings_from_uniforms(shaderCode))
         self.assertBindingChecksCalled(shaderCode)
 
     def testFoundBooleanUniforms(self):
         shaderCode = ""
         self.shader.parse_boolean_bindings.return_value = True
-        self.assertTrue(self.shader.parse_bindings_from_uniforms(shaderCode, "test"))
+        self.assertTrue(self.shader.parse_bindings_from_uniforms(shaderCode))
         self.assertBindingChecksCalled(shaderCode)
 
     def testFoundArrayUniforms(self):
         shaderCode = ""
-        self.shader.f.return_value = True
-        self.assertTrue(self.shader.parse_bindings_from_uniforms(shaderCode, "test"))
+        self.shader.parse_array_bindings.return_value = True
+        self.assertTrue(self.shader.parse_bindings_from_uniforms(shaderCode))
         self.assertBindingChecksCalled(shaderCode)
 
 class TestCheckNumericKeyBindingsFromShader(BaseCase):
@@ -123,7 +126,7 @@ class TestCheckNumericKeyBindingsFromShader(BaseCase):
         self.assertFalse(self.shader.parse_numeric_bindings(
             "uniform bool boolname; uniform float arrayname[1];"))
         self.assertEqual(self.shader.update_binding.call_count, 0)
-    
+
     def test_ints_floats_found(self):
         self.assertTrue(self.shader.parse_numeric_bindings(
             "uniform bool boolname; uniform float arrayname[1];"
@@ -148,20 +151,20 @@ class TestCheckBooleanKeyBindingsFromShader(BaseCase):
             "uniform int intname; uniform float floatname;"))
         self.assertEqual(self.shader.update_binding.call_count, 1)
 
-class TestCheckArrayKeyBindingsFromShader(BaseCase):
+class TestParseArrayBindings(BaseCase):
 
     def setUp(self):
         self.shader = ShaderController("blank/blank_shader")
         self.shader.update_binding = create_autospec(self.shader.update_binding)
 
     def test_floats_ints_bools_not_found(self):
-        self.assertFalse(self.shader.f(
+        self.assertFalse(self.shader.parse_array_bindings(
             "uniform bool boolname;"
             "uniform int intname; uniform float floatname;"))
         self.assertEqual(self.shader.update_binding.call_count, 0)
-    
+
     def test_bools_found(self):
-        self.assertTrue(self.shader.f(
+        self.assertTrue(self.shader.parse_array_bindings(
             "uniform bool boolname; uniform float arrayname[1];"
             "uniform int intname; uniform float floatname;"))
         self.assertEqual(self.shader.update_binding.call_count, 1)
@@ -240,7 +243,7 @@ class TestCreateBinding(BaseCase):
         self.assertEqual(self.viewer.init_vec3_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec4_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['an_int']['type'], 'int')
-        
+
     def test_type_is_float(self):
         self.uniform.gdict['name'] = 'a_float'
         self.uniform.gdict['type'] = 'float'
@@ -253,7 +256,7 @@ class TestCreateBinding(BaseCase):
         self.assertEqual(self.viewer.init_vec3_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec4_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['a_float']['type'], 'float')
-        
+
     def test_type_is_bool(self):
         self.uniform.gdict['name'] = 'a_bool'
         self.uniform.gdict['type'] = 'bool'
@@ -266,7 +269,7 @@ class TestCreateBinding(BaseCase):
         self.assertEqual(self.viewer.init_vec3_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec4_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['a_bool']['type'], 'bool')
-        
+
     def test_type_is_vec2(self):
         self.uniform.gdict['name'] = 'a_vec'
         self.uniform.gdict['type'] = 'vec2'
@@ -279,7 +282,7 @@ class TestCreateBinding(BaseCase):
         self.assertEqual(self.viewer.init_vec3_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec4_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec2')
-        
+
     def test_type_is_vec3(self):
         self.uniform.gdict['name'] = 'a_vec'
         self.uniform.gdict['type'] = 'vec3'
@@ -292,7 +295,7 @@ class TestCreateBinding(BaseCase):
         self.viewer.init_vec3_binding.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
         self.assertEqual(self.viewer.init_vec4_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec3')
-        
+
     def test_type_is_vec4(self):
         self.uniform.gdict['name'] = 'a_vec'
         self.uniform.gdict['type'] = 'vec4'
@@ -317,12 +320,12 @@ class TestCreateArrayBinding(BaseCase):
 
     def setUp(self):
         self.viewer = ShaderController("blank/blank_shader")
-        self.viewer.init_int_array_binding   = create_autospec(self.viewer.init_int_array_binding)
+        self.viewer.init_int_array_binding = create_autospec(self.viewer.init_int_array_binding)
         self.viewer.init_float_array_binding = create_autospec(self.viewer.init_float_array_binding)
-        self.viewer.init_bool_array_binding  = create_autospec(self.viewer.init_bool_array_binding)
-        self.viewer.init_vec2_array_binding  = create_autospec(self.viewer.init_vec2_array_binding)
-        self.viewer.init_vec3_array_binding  = create_autospec(self.viewer.init_vec3_array_binding)
-        self.viewer.init_vec3_array_binding  = create_autospec(self.viewer.init_vec3_array_binding)
+        self.viewer.init_bool_array_binding = create_autospec(self.viewer.init_bool_array_binding)
+        self.viewer.init_vec2_array_binding = create_autospec(self.viewer.init_vec2_array_binding)
+        self.viewer.init_vec3_array_binding = create_autospec(self.viewer.init_vec3_array_binding)
+        self.viewer.init_vec4_array_binding = create_autospec(self.viewer.init_vec4_array_binding)
 
         self.uniform = TestCreateArrayBinding.mockUniform()
 
@@ -335,9 +338,9 @@ class TestCreateArrayBinding(BaseCase):
         self.assertEqual(self.viewer.init_bool_array_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec2_array_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
-        self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
+        self.assertEqual(self.viewer.init_vec4_array_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['an_int']['type'], 'int')
-        
+
     def test_type_is_float(self):
         self.uniform.gdict['name'] = 'a_float'
         self.uniform.gdict['type'] = 'float'
@@ -347,9 +350,9 @@ class TestCreateArrayBinding(BaseCase):
         self.assertEqual(self.viewer.init_bool_array_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec2_array_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
-        self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
+        self.assertEqual(self.viewer.init_vec4_array_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['a_float']['type'], 'float')
-        
+
     def test_type_is_bool(self):
         self.uniform.gdict['name'] = 'a_bool'
         self.uniform.gdict['type'] = 'bool'
@@ -359,9 +362,9 @@ class TestCreateArrayBinding(BaseCase):
         self.viewer.init_bool_array_binding.assert_called_once_with(self.viewer.bindings['a_bool'], self.uniform)
         self.assertEqual(self.viewer.init_vec2_array_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
-        self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
+        self.assertEqual(self.viewer.init_vec4_array_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['a_bool']['type'], 'bool')
-        
+
     def test_type_is_vec2(self):
         self.uniform.gdict['name'] = 'a_vec'
         self.uniform.gdict['type'] = 'vec2'
@@ -371,9 +374,9 @@ class TestCreateArrayBinding(BaseCase):
         self.assertEqual(self.viewer.init_bool_array_binding .call_count, 0)
         self.viewer.init_vec2_array_binding.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
         self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
-        self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
+        self.assertEqual(self.viewer.init_vec4_array_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec2')
-        
+
     def test_type_is_vec3(self):
         self.uniform.gdict['name'] = 'a_vec'
         self.uniform.gdict['type'] = 'vec3'
@@ -383,9 +386,9 @@ class TestCreateArrayBinding(BaseCase):
         self.assertEqual(self.viewer.init_bool_array_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec2_array_binding .call_count, 0)
         self.viewer.init_vec3_array_binding.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
-        self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
+        self.assertEqual(self.viewer.init_vec4_array_binding .call_count, 0)
         self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec3')
-        
+
     def test_type_is_vec4(self):
         self.uniform.gdict['name'] = 'a_vec'
         self.uniform.gdict['type'] = 'vec4'
@@ -395,7 +398,7 @@ class TestCreateArrayBinding(BaseCase):
         self.assertEqual(self.viewer.init_bool_array_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec2_array_binding .call_count, 0)
         self.assertEqual(self.viewer.init_vec3_array_binding .call_count, 0)
-        self.viewer.init_vec3_array_binding.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
+        self.viewer.init_vec4_array_binding.assert_called_once_with(self.viewer.bindings['a_vec'], self.uniform)
         self.assertEqual(self.viewer.bindings['a_vec']['type'], 'vec4')
 
 class TestSetupInt(BaseCase):
@@ -809,9 +812,9 @@ class TestBindMostObviousMouseControls(BaseCase):
         self.viewer.bindings['y'] = "mock_y"
         self.viewer.bindings['zoom'] = "mock_zoom"
         self.viewer.bind_mouse_controls()
-        self.assertEqual(getattr(self.viewer, 'mouseX'), "mock_x")
-        self.assertEqual(getattr(self.viewer, 'mouseY'), "mock_y")
-        self.assertEqual(getattr(self.viewer, 'mouseScroll'), "mock_zoom")
+        self.assertEqual(getattr(self.viewer, 'mouse_x'), "mock_x")
+        self.assertEqual(getattr(self.viewer, 'mouse_y'), "mock_y")
+        self.assertEqual(getattr(self.viewer, 'mouse_scroll'), "mock_zoom")
 
 class TestMouseDrag(BaseCase):
 
