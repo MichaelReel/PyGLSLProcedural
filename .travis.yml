@@ -5,5 +5,6 @@ python:
 install: "pip install pyglet"
 install: "pip install coverage"
 # command to run tests
-script: coverage run test/test.py
-script: coverage html
+script: 
+- coverage run test/test.py
+- coverage html
