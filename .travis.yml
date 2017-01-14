@@ -4,4 +4,4 @@ python:
 # command to install dependencies
 install: "pip install pyglet"
 # command to run tests
-script: test\test.py
+script: test/test.py
