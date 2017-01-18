@@ -7,7 +7,6 @@ import os
 import json
 import re
 from random import Random
-from pyglet.window import key
 from shader import Shader
 
 class ShaderController(Shader):
@@ -22,6 +21,7 @@ class ShaderController(Shader):
             fragmentshader = ' '.join(fstrm)
 
         # Load and update key bindings
+        self.set_key_order()
         self.used_keys = {}
         self.load_key_bindings("{}.bindings.json".format(shader_path))
         self.parse_bindings_from_uniforms(vertexshader)
@@ -277,7 +277,7 @@ class ShaderController(Shader):
 
     def get_unbound_key(self, binding, key_use):
         ''' Find the next preferred key that isn't already used'''
-        for possible_key in preferred_key_order():
+        for possible_key in self.key_order:
             if possible_key not in self.used_keys:
                 binding[key_use] = possible_key
                 self.used_keys[possible_key] = binding
@@ -328,7 +328,7 @@ class ShaderController(Shader):
                 'ivec4' : self.uniformi,
             }[var_type](name, *var_default)
 
-    def get_html_help(self):
+    def get_html_help(self, key):
         '''Return html description of key bindings'''
         for name in self.bindings:
             binding = self.bindings[name]
@@ -377,26 +377,15 @@ class ShaderController(Shader):
         if getattr(self, 'mouse_scroll', None):
             self.mouse_scroll['default'] -= scroll_y * self.mouse_scroll['diff']
 
-def preferred_key_order():
-    '''
-    Return a list of keys in the the preconfigured 'best' order
-    for use as key bindings
-    '''
-    # Remove the particular keys prioritised for use
-    priority_keys = ["Q", "A", "W", "S", "E", "D", "R", "F", "T", "G", "Y", "H", "U",
-                     "J", "I", "K", "O", "L", "P", "Z", "X", "C", "V", "B", "N", "M",
-                     "_1", "_2", "_3", "_4", "_5", "_6", "_7", "_8", "_9", "_0"]
-
-    # clone the full set of key codes, removing the priority keys
-    # from the key list and placing them at the front
-    non_priority_keys = list(get_all_key_names() - set(priority_keys))
-    return [getattr(key, letter) for letter in priority_keys] + non_priority_keys
-
-
-def get_all_key_names():
-    '''Return the set of all key names'''
-    # pylint: disable=I0011,W0212
-    return set(key._key_names)
+    def set_key_order(self, new_key_order=[113, 97, 119, 115, 101, 100, 114, 102, 116, 103,\
+                                           121, 104, 117, 106, 105, 107, 111, 108, 112, 122,\
+                                           120, 99, 118, 98, 110, 109, 49, 50, 51, 52, 53,\
+                                           54, 55, 56, 57, 48]):
+        '''
+        Set the order in which choose bind keys, in order of preference
+        new_key_order should be a list of key symbols as defined in pyglet.window.key
+        '''
+        self.key_order = new_key_order
 
 def update_permutation(binding):
     '''
