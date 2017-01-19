@@ -1,6 +1,7 @@
 import unittest, sys
 from test_base import *
 
+from pyglet.window import key
 # Pull in the procviewer file for testing
 from procviewer import *
 
@@ -762,7 +763,7 @@ class TestGetHtmlHelps(BaseCase):
         self.viewer = ShaderController("blank/blank_shader")
 
     def test_no_bindings(self):
-        results = list(self.viewer.get_html_help())
+        results = list(self.viewer.get_html_help(key))
         self.assertEqual(len(results), 0)
 
     def test_keys_bound(self):
@@ -773,7 +774,7 @@ class TestGetHtmlHelps(BaseCase):
         self.viewer.bindings['Scalar']['dec_key'] = key.A
         self.viewer.bindings['List'] = {}
         self.viewer.bindings['List']['shuffle_key'] = key.S        
-        results = sorted(self.viewer.get_html_help())
+        results = sorted(self.viewer.get_html_help(key))
         self.assertEqual(results, ['<b>Q/A</b>:Scalar', '<b>S</b>:List', '<b>W</b>:Bool'])
 
 class TestGetStatuses(BaseCase):
@@ -858,12 +859,6 @@ class TestMouseScrollY(BaseCase):
         self.assertEqual(self.viewer.mouse_scroll['default'], 20)
 
 class TestStaticFunctions(BaseCase):
-
-    from pyglet.window import key
-
-    def test_preferredKeyOrder(self):
-        for x in preferred_key_order():
-            self.assertTrue(x in key._key_names)
 
     def test_updatePermutation(self):
         binding = {}
