@@ -1,22 +1,19 @@
-import unittest, sys
+import unittest
+import sys
+import json
 from test_base import *
 
+# from pyglet.window import key
 # Pull in the procviewer file for testing
-from procviewer import *
+from procviewer import ShaderController, update_permutation
 
 class TestTextureShaderInitBlank(BaseCase):
 
     def setUp(self):
         # Ensure there's no json for blank
         self.tearDown()
-        self.shader = ShaderController("blank/blank_shader")
-
-    def test_handle_created(self):
-        self.assertTrue(isinstance(self.shader.handle, integer_types))
-        self.assertGreater(self.shader.handle, 0)
-
-    def test_shader_is_linked(self):
-        self.assertTrue(self.shader.linked)
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.shader_controller = ShaderController(shader, "blank/blank_shader")
 
     def test_empty_bindings_file_created(self):
         keyBindingsFile = "blank/blank_shader.bindings.json"
@@ -26,9 +23,9 @@ class TestTextureShaderInitBlank(BaseCase):
 
     def test_no_key_bindings_loaded_or_created(self):
         # Check bindings is a dictionary
-        self.assertIs(type(self.shader.bindings), dict)
+        self.assertIs(type(self.shader_controller.bindings), dict)
         # Check the dictionary is empty
-        self.assertFalse(self.shader.bindings)
+        self.assertFalse(self.shader_controller.bindings)
 
 loadfile = "bindings/loadkey.json"
 savefile = "bindings/savekey.json"
@@ -37,7 +34,8 @@ class TestLoadKeyBindings(BaseCase):
 
     def setUp(self):
         # Start with the blank shader
-        self.shader = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.shader = ShaderController(shader, "blank/blank_shader")
         # Load a different json file
         self.shader.load_key_bindings(loadfile)
 
@@ -55,7 +53,8 @@ class TestSaveKeyBindings(BaseCase):
         # Clear any file that exists
         self.tearDown()
         # Start with the blank shader
-        self.shader = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.shader = ShaderController(shader, "blank/blank_shader")
         # Load a different json file
         self.shader.load_key_bindings(loadfile)
         # Save key binds to a new file
@@ -78,7 +77,8 @@ class TestSaveKeyBindings(BaseCase):
 class TestCheckKeyBindingsFromShaderUniforms(BaseCase):
 
     def setUp(self):
-        self.shader = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.shader = ShaderController(shader, "blank/blank_shader")
         self.shader.parse_numeric_bindings =\
                 create_autospec(self.shader.parse_numeric_bindings, return_value=False)
         self.shader.parse_boolean_bindings =\
@@ -119,7 +119,8 @@ class TestCheckKeyBindingsFromShaderUniforms(BaseCase):
 class TestCheckNumericKeyBindingsFromShader(BaseCase):
 
     def setUp(self):
-        self.shader = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.shader = ShaderController(shader, "blank/blank_shader")
         self.shader.update_binding = create_autospec(self.shader.update_binding)
 
     def test_bools_arrays_not_found(self):
@@ -136,7 +137,8 @@ class TestCheckNumericKeyBindingsFromShader(BaseCase):
 class TestCheckBooleanKeyBindingsFromShader(BaseCase):
 
     def setUp(self):
-        self.shader = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.shader = ShaderController(shader, "blank/blank_shader")
         self.shader.update_binding = create_autospec(self.shader.update_binding)
 
     def test_floats_ints_arrays_not_found(self):
@@ -154,7 +156,8 @@ class TestCheckBooleanKeyBindingsFromShader(BaseCase):
 class TestParseArrayBindings(BaseCase):
 
     def setUp(self):
-        self.shader = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.shader = ShaderController(shader, "blank/blank_shader")
         self.shader.update_binding = create_autospec(self.shader.update_binding)
 
     def test_floats_ints_bools_not_found(self):
@@ -176,7 +179,8 @@ class TestCheckShaderBinding(BaseCase):
             return key
 
     def setUp(self):
-        self.shader = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.shader = ShaderController(shader, "blank/blank_shader")
         self.shader.create_binding = create_autospec(self.shader.create_binding)
         self.uniform = TestCheckShaderBinding.mockUniform()
 
@@ -209,7 +213,8 @@ class TestCreateBinding(BaseCase):
             return self.gdict
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
         self.viewer.create_array_binding = create_autospec(self.viewer.create_array_binding)
         self.viewer.init_int_binding   = create_autospec(self.viewer.init_int_binding)
         self.viewer.init_float_binding = create_autospec(self.viewer.init_float_binding)
@@ -319,7 +324,8 @@ class TestCreateArrayBinding(BaseCase):
             return self.gdict[key]
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
         self.viewer.init_int_array_binding = create_autospec(self.viewer.init_int_array_binding)
         self.viewer.init_float_array_binding = create_autospec(self.viewer.init_float_array_binding)
         self.viewer.init_bool_array_binding = create_autospec(self.viewer.init_bool_array_binding)
@@ -414,7 +420,8 @@ class TestSetupInt(BaseCase):
                 return None
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
         self.uniform = TestSetupInt.mockUniform()
         self.binding = {}
 
@@ -446,7 +453,8 @@ class TestSetupFloat(BaseCase):
                 return None
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
         self.uniform = TestSetupFloat.mockUniform()
         self.binding = {}
 
@@ -478,7 +486,8 @@ class TestSetupBool(BaseCase):
                 return None
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
         self.uniform = TestSetupBool.mockUniform()
         self.binding = {}
 
@@ -506,7 +515,8 @@ class TestSetupVec(BaseCase):
                 return None
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
         self.uniform = TestSetupVec.mockUniform()
         self.binding = {}
 
@@ -538,7 +548,8 @@ class TestSetupIntArray(BaseCase):
                 return None
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
         self.uniform = TestSetupIntArray.mockUniform()
         self.binding = {}
 
@@ -580,7 +591,8 @@ class TestSetupIntArray(BaseCase):
 class TestUnimplementedSetupArrayMethods(BaseCase):
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
         self.uniform = TestSetupIntArray.mockUniform()
         self.binding = {}
 
@@ -602,184 +614,193 @@ class TestUnimplementedSetupArrayMethods(BaseCase):
 class TestBindingTrigger(BaseCase):
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        self.key = 113 # key.Q
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
 
     def test_symbol_not_bound(self):
-        self.assertFalse(self.viewer.binding_trigger(key.Q))
+        self.assertFalse(self.viewer.binding_trigger(self.key))
 
     def test_toggle_key_bound(self):
         # Key bindings are normally prepared in the viewer.bindings and linked in usedkeys
         # Here we're just throwing them into usedkeys directly and ignoring the bindings table
-        self.viewer.used_keys[key.Q] = {}
-        self.viewer.used_keys[key.Q]['toggle_key'] = key.Q
-        self.viewer.used_keys[key.Q]['default'] = False
+        self.viewer.used_keys[self.key] = {}
+        self.viewer.used_keys[self.key]['toggle_key'] = self.key
+        self.viewer.used_keys[self.key]['default'] = False
         # Check the bound key caused an action
-        self.assertTrue(self.viewer.binding_trigger(key.Q))
+        self.assertTrue(self.viewer.binding_trigger(self.key))
         # Check the default value was toggled
-        self.assertTrue(self.viewer.used_keys[key.Q]['default'])
+        self.assertTrue(self.viewer.used_keys[self.key]['default'])
 
     def test_inc_key_bound(self):
-        self.viewer.used_keys[key.Q] = {}
-        self.viewer.used_keys[key.Q]['inc_key'] = key.Q
-        self.viewer.used_keys[key.Q]['default'] = 10
-        self.viewer.used_keys[key.Q]['diff'] = 5
+        self.viewer.used_keys[self.key] = {}
+        self.viewer.used_keys[self.key]['inc_key'] = self.key
+        self.viewer.used_keys[self.key]['default'] = 10
+        self.viewer.used_keys[self.key]['diff'] = 5
         # Check the bound key caused an action
-        self.assertTrue(self.viewer.binding_trigger(key.Q))
+        self.assertTrue(self.viewer.binding_trigger(self.key))
         # Check the default value was incremented
-        self.assertEqual(self.viewer.used_keys[key.Q]['default'], 15)
+        self.assertEqual(self.viewer.used_keys[self.key]['default'], 15)
 
     def test_dec_key_bound(self):
-        self.viewer.used_keys[key.Q] = {}
-        self.viewer.used_keys[key.Q]['dec_key'] = key.Q
-        self.viewer.used_keys[key.Q]['default'] = 10
-        self.viewer.used_keys[key.Q]['diff'] = 5
+        self.viewer.used_keys[self.key] = {}
+        self.viewer.used_keys[self.key]['dec_key'] = self.key
+        self.viewer.used_keys[self.key]['default'] = 10
+        self.viewer.used_keys[self.key]['diff'] = 5
         # Check the bound key caused an action
-        self.assertTrue(self.viewer.binding_trigger(key.Q))
+        self.assertTrue(self.viewer.binding_trigger(self.key))
         # Check the default value was decremented
-        self.assertEqual(self.viewer.used_keys[key.Q]['default'], 5)
+        self.assertEqual(self.viewer.used_keys[self.key]['default'], 5)
 
     def test_shuffle_key_bound(self):
-        self.viewer.used_keys[key.Q] = {}
-        self.viewer.used_keys[key.Q]['shuffle_key'] = key.Q
-        self.viewer.used_keys[key.Q]['default'] = [0, 1, 2, 3, 4]
-        self.viewer.used_keys[key.Q]['loop'] = len(self.viewer.used_keys[key.Q]['default'])
-        self.viewer.used_keys[key.Q]['seed'] = 1
+        self.viewer.used_keys[self.key] = {}
+        self.viewer.used_keys[self.key]['shuffle_key'] = self.key
+        self.viewer.used_keys[self.key]['default'] = [0, 1, 2, 3, 4]
+        self.viewer.used_keys[self.key]['loop'] = len(self.viewer.used_keys[self.key]['default'])
+        self.viewer.used_keys[self.key]['seed'] = 1
         # Check the bound key caused an action
-        self.assertTrue(self.viewer.binding_trigger(key.Q))
+        self.assertTrue(self.viewer.binding_trigger(self.key))
         # Check the shuffle was triggered, i.e.: list is reordered
-        self.assertNotEqual(self.viewer.used_keys[key.Q]['default'], [0, 1, 2, 3, 4])
+        self.assertNotEqual(self.viewer.used_keys[self.key]['default'], [0, 1, 2, 3, 4])
         # but still the same values
-        self.assertEqual(sorted(self.viewer.used_keys[key.Q]['default']), [0, 1, 2, 3, 4])
+        self.assertEqual(sorted(self.viewer.used_keys[self.key]['default']), [0, 1, 2, 3, 4])
 
     def test_key_used_but_not_bound(self):
-        self.viewer.used_keys[key.Q] = {}
+        self.viewer.used_keys[self.key] = {}
         # Check the bound key caused an exception
-        self.assertRaises(ValueError, self.viewer.binding_trigger, key.Q)
+        self.assertRaises(ValueError, self.viewer.binding_trigger, self.key)
 
 class TestSetUniforms(BaseCase):
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
-        self.viewer.uniformi = create_autospec(self.viewer.uniformi)
-        self.viewer.uniformf = create_autospec(self.viewer.uniformf)
+        self.shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(self.shader, "blank/blank_shader")
+        # self.viewer.uniformi = create_autospec(self.viewer.uniformi)
+        # self.viewer.uniformf = create_autospec(self.viewer.uniformf)
 
     def test_no_uniforms(self):
         self.viewer.set_uniforms()
-        self.assertEqual(self.viewer.uniformi.call_count, 0)
-        self.assertEqual(self.viewer.uniformf.call_count, 0)
+        self.assertEqual(self.shader.uniformi.call_count, 0)
+        self.assertEqual(self.shader.uniformf.call_count, 0)
 
     def test_int_uniform(self):
         self.viewer.bindings['an_int'] = {}
         self.viewer.bindings['an_int']['type'] = "int"
         self.viewer.bindings['an_int']['default'] = 1
         self.viewer.set_uniforms()
-        self.viewer.uniformi.assert_called_once_with('an_int', 1)
-        self.assertEqual(self.viewer.uniformf.call_count, 0)
+        self.shader.uniformi.assert_called_once_with('an_int', 1)
+        self.assertEqual(self.shader.uniformf.call_count, 0)
         
     def test_int_array_uniform(self):
         self.viewer.bindings['an_int_array'] = {}
         self.viewer.bindings['an_int_array']['type'] = "int"
         self.viewer.bindings['an_int_array']['default'] = [1, 2, 3, 4, 5]
         self.viewer.set_uniforms()
-        self.viewer.uniformi.assert_called_once_with('an_int_array', 1, 2, 3, 4, 5)
-        self.assertEqual(self.viewer.uniformf.call_count, 0)
+        self.shader.uniformi.assert_called_once_with('an_int_array', 1, 2, 3, 4, 5)
+        self.assertEqual(self.shader.uniformf.call_count, 0)
 
     def test_ivec2_uniform(self):
         self.viewer.bindings['an_ivec2'] = {}
         self.viewer.bindings['an_ivec2']['type'] = "ivec2"
         self.viewer.bindings['an_ivec2']['default'] = [1, 2]
         self.viewer.set_uniforms()
-        self.viewer.uniformi.assert_called_once_with('an_ivec2', 1, 2)
-        self.assertEqual(self.viewer.uniformf.call_count, 0)
+        self.shader.uniformi.assert_called_once_with('an_ivec2', 1, 2)
+        self.assertEqual(self.shader.uniformf.call_count, 0)
 
     def test_ivec3_uniform(self):
         self.viewer.bindings['an_ivec3'] = {}
         self.viewer.bindings['an_ivec3']['type'] = "ivec3"
         self.viewer.bindings['an_ivec3']['default'] = [1, 2, 3]
         self.viewer.set_uniforms()
-        self.viewer.uniformi.assert_called_once_with('an_ivec3', 1, 2, 3)
-        self.assertEqual(self.viewer.uniformf.call_count, 0)
+        self.shader.uniformi.assert_called_once_with('an_ivec3', 1, 2, 3)
+        self.assertEqual(self.shader.uniformf.call_count, 0)
 
     def test_ivec4_uniform(self):
         self.viewer.bindings['an_ivec4'] = {}
         self.viewer.bindings['an_ivec4']['type'] = "ivec4"
         self.viewer.bindings['an_ivec4']['default'] = [1, 2, 3, 4]
         self.viewer.set_uniforms()
-        self.viewer.uniformi.assert_called_once_with('an_ivec4', 1, 2, 3, 4)
-        self.assertEqual(self.viewer.uniformf.call_count, 0)
+        self.shader.uniformi.assert_called_once_with('an_ivec4', 1, 2, 3, 4)
+        self.assertEqual(self.shader.uniformf.call_count, 0)
 
     def test_bool_uniform(self):
         self.viewer.bindings['a_bool'] = {}
         self.viewer.bindings['a_bool']['type'] = "bool"
         self.viewer.bindings['a_bool']['default'] = True
         self.viewer.set_uniforms()
-        self.viewer.uniformi.assert_called_once_with('a_bool', True)
-        self.assertEqual(self.viewer.uniformf.call_count, 0)
+        self.shader.uniformi.assert_called_once_with('a_bool', True)
+        self.assertEqual(self.shader.uniformf.call_count, 0)
 
     def test_float_uniform(self):
         self.viewer.bindings['a_float'] = {}
         self.viewer.bindings['a_float']['type'] = "float"
         self.viewer.bindings['a_float']['default'] = 1.0
         self.viewer.set_uniforms()
-        self.assertEqual(self.viewer.uniformi.call_count, 0)
-        self.viewer.uniformf.assert_called_once_with('a_float', 1.0)
+        self.assertEqual(self.shader.uniformi.call_count, 0)
+        self.shader.uniformf.assert_called_once_with('a_float', 1.0)
 
     def test_float_array_uniform(self):
         self.viewer.bindings['a_float_array'] = {}
         self.viewer.bindings['a_float_array']['type'] = "float"
         self.viewer.bindings['a_float_array']['default'] = [1.0, 1.1, 1.2, 1.3, 1.4]
         self.viewer.set_uniforms()
-        self.assertEqual(self.viewer.uniformi.call_count, 0)
-        self.viewer.uniformf.assert_called_once_with('a_float_array', 1.0, 1.1, 1.2, 1.3, 1.4)
+        self.assertEqual(self.shader.uniformi.call_count, 0)
+        self.shader.uniformf.assert_called_once_with('a_float_array', 1.0, 1.1, 1.2, 1.3, 1.4)
 
     def test_vec2_uniform(self):
         self.viewer.bindings['a_vec2'] = {}
         self.viewer.bindings['a_vec2']['type'] = "vec2"
         self.viewer.bindings['a_vec2']['default'] = [1.0, 1.1]
         self.viewer.set_uniforms()
-        self.assertEqual(self.viewer.uniformi.call_count, 0)
-        self.viewer.uniformf.assert_called_once_with('a_vec2', 1.0, 1.1)
+        self.assertEqual(self.shader.uniformi.call_count, 0)
+        self.shader.uniformf.assert_called_once_with('a_vec2', 1.0, 1.1)
 
     def test_vec3_uniform(self):
         self.viewer.bindings['a_vec3'] = {}
         self.viewer.bindings['a_vec3']['type'] = "vec3"
         self.viewer.bindings['a_vec3']['default'] = [1.0, 1.1, 1.2]
         self.viewer.set_uniforms()
-        self.assertEqual(self.viewer.uniformi.call_count, 0)
-        self.viewer.uniformf.assert_called_once_with('a_vec3', 1.0, 1.1, 1.2)
+        self.assertEqual(self.shader.uniformi.call_count, 0)
+        self.shader.uniformf.assert_called_once_with('a_vec3', 1.0, 1.1, 1.2)
 
     def test_vec4_uniform(self):
         self.viewer.bindings['a_vec4'] = {}
         self.viewer.bindings['a_vec4']['type'] = "vec4"
         self.viewer.bindings['a_vec4']['default'] = [1.0, 1.1, 1.2, 1.3]
         self.viewer.set_uniforms()
-        self.assertEqual(self.viewer.uniformi.call_count, 0)
-        self.viewer.uniformf.assert_called_once_with('a_vec4', 1.0, 1.1, 1.2, 1.3)
+        self.assertEqual(self.shader.uniformi.call_count, 0)
+        self.shader.uniformf.assert_called_once_with('a_vec4', 1.0, 1.1, 1.2, 1.3)
 
 class TestGetHtmlHelps(BaseCase):
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
 
     def test_no_bindings(self):
-        results = list(self.viewer.get_html_help())
+        key = Mock()
+        results = list(self.viewer.get_html_help(key))
         self.assertEqual(len(results), 0)
 
     def test_keys_bound(self):
+        key = Mock(W=119, Q=113, A=97, S=115)
+        yek = lambda v: {119: 'W', 113: 'Q', 97: 'A', 115: 'S'}.get(v, None)
+        key.symbol_string = Mock(side_effect=yek)
         self.viewer.bindings['Bool'] = {}
         self.viewer.bindings['Bool']['toggle_key'] = key.W
         self.viewer.bindings['Scalar'] = {}
         self.viewer.bindings['Scalar']['inc_key'] = key.Q
         self.viewer.bindings['Scalar']['dec_key'] = key.A
         self.viewer.bindings['List'] = {}
-        self.viewer.bindings['List']['shuffle_key'] = key.S        
-        results = sorted(self.viewer.get_html_help())
+        self.viewer.bindings['List']['shuffle_key'] = key.S
+        results = sorted(self.viewer.get_html_help(key))
         self.assertEqual(results, ['<b>Q/A</b>:Scalar', '<b>S</b>:List', '<b>W</b>:Bool'])
 
 class TestGetStatuses(BaseCase):
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
 
     def test_no_bindings(self):
         results = list(self.viewer.get_statuses())
@@ -799,7 +820,8 @@ class TestGetStatuses(BaseCase):
 class TestBindMostObviousMouseControls(BaseCase):
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
 
     def test_no_controls_to_bind(self):
         self.viewer.bind_mouse_controls()
@@ -819,7 +841,8 @@ class TestBindMostObviousMouseControls(BaseCase):
 class TestMouseDrag(BaseCase):
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
 
     def test_no_zoom_bound(self):
         self.viewer.mouse_x = {}
@@ -844,7 +867,8 @@ class TestMouseDrag(BaseCase):
 class TestMouseScrollY(BaseCase):
 
     def setUp(self):
-        self.viewer = ShaderController("blank/blank_shader")
+        shader = Mock(vertex_shader="", fragment_shader="")
+        self.viewer = ShaderController(shader, "blank/blank_shader")
 
     def test_no_zoom_bound(self):
         self.viewer.mouse_scroll_y(2)
@@ -858,12 +882,6 @@ class TestMouseScrollY(BaseCase):
         self.assertEqual(self.viewer.mouse_scroll['default'], 20)
 
 class TestStaticFunctions(BaseCase):
-
-    from pyglet.window import key
-
-    def test_preferredKeyOrder(self):
-        for x in preferred_key_order():
-            self.assertTrue(x in key._key_names)
 
     def test_updatePermutation(self):
         binding = {}

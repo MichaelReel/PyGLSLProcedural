@@ -1,24 +1,46 @@
 from __future__ import print_function
+from pyglet import gl
+from pyglet.window import key
+import pyglet
+import os
+import time
+import io
 from procviewer import ShaderController
-from pyglet.gl import *
-from random import Random
-import pyglet, os, time
+from shader import Shader
 
 class TextureWindow(pyglet.window.Window):
+    '''
+    Concrete draw window. This uses the ShaderController to load and operate the shader at the path
+    passed to the constructor.
+    '''
 
     def __init__(self, shader_path):
+        '''
+        Load and attempt to run the shader at shader_path.
+        '''
         self.w = 512
         self.h = 512
 
-        self.textureShader = ShaderController(shader_path)
-        super(TextureWindow, self).__init__(caption = shader_path, width=self.w, height=self.h)
+        # Load shader code
+        vspath = '%s.v.glsl' % shader_path
+        fspath = '%s.f.glsl' % shader_path
+        with io.open(vspath) as vstrm, io.open(fspath) as fstrm:
+            vertexshader = ' '.join(vstrm)
+            fragmentshader = ' '.join(fstrm)
 
-        self.createKeyHelpLabels()
+        self.shader = Shader(vertexshader, fragmentshader)
+        self.shader_controller = ShaderController(self.shader, shader_path)
+        super(TextureWindow, self).__init__(caption=shader_path, width=self.w, height=self.h)
 
-    def createKeyHelpLabels(self):
+        self.create_key_help_labels()
+
+    def create_key_help_labels(self):
+        '''
+        Create the help labels to display overlaying the drawn shader
+        '''
         self.helpLabels = []
         y = self.height
-        for labelText in self.textureShader.get_html_help():
+        for labelText in self.shader_controller.get_html_help(key):
             self.helpLabels.append(pyglet.text.HTMLLabel(
                     "<font face='Courier New' color='white'>{}</font>".format(labelText),
                     x=0, y=y,
@@ -29,7 +51,7 @@ class TextureWindow(pyglet.window.Window):
         self.statusLabels = []
         y = 20
         label = 0
-        for labelText in self.textureShader.get_statuses():
+        for labelText in self.shader_controller.get_statuses():
             # Create a new label if we need one (suddenly)
             if label >= len(self.statusLabels):
                 self.statusLabels.append(pyglet.text.HTMLLabel("",
@@ -41,19 +63,19 @@ class TextureWindow(pyglet.window.Window):
             label += 1
 
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-        self.textureShader.mouse_drag(dx, dy)
+        self.shader_controller.mouse_drag(dx, dy)
 
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        self.textureShader.mouse_scroll_y(scroll_y)
+        self.shader_controller.mouse_scroll_y(scroll_y)
 
     def on_key_release(self, symbol, modifiers):
-        self.textureShader.binding_trigger(symbol)
+        self.shader_controller.binding_trigger(symbol)
 
     def saveFromShader(self):
-        a = (GLubyte * (4 * self.w * self.h))(0)
+        a = (gl.GLubyte * (4 * self.w * self.h))(0)
         # Save without any GUI elements
         self.drawGenerated()
-        glReadPixels(0, 0, self.w, self.h, GL_RGBA, GL_UNSIGNED_BYTE, a)
+        gl.glReadPixels(0, 0, self.w, self.h, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, a)
         image = pyglet.image.ImageData(self.w, self.h, 'RGBA', a)
         scriptPath = os.path.dirname(os.path.realpath(__file__))
         filePath = scriptPath + "/TESTSAVE_" + time.strftime("%Y%m%d_%H%M%S") + ".png"
@@ -66,34 +88,34 @@ class TextureWindow(pyglet.window.Window):
         self.drawGUI()
         
     def drawGenerated(self):
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(-1., 1., 1., -1., 0., 1.)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        gl.glOrtho(-1., 1., 1., -1., 0., 1.)
 
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
 
-        self.textureShader.bind()
+        self.shader.bind()
 
-        self.textureShader.set_uniforms()
+        self.shader_controller.set_uniforms()
 
-        glBegin(GL_QUADS)
-        glVertex2i(-1, -1)
-        glTexCoord2i(-2, -2)
-        glVertex2f(1, -1)
-        glTexCoord2i(2, -2)
-        glVertex2i(1, 1)
-        glTexCoord2i(2, 2)
-        glVertex2i(-1, 1)
-        glTexCoord2i(-2, 2)
-        glEnd()
+        gl.glBegin(gl.GL_QUADS)
+        gl.glVertex2i(-1, -1)
+        gl.glTexCoord2i(-2, -2)
+        gl.glVertex2f(1, -1)
+        gl.glTexCoord2i(2, -2)
+        gl.glVertex2i(1, 1)
+        gl.glTexCoord2i(2, 2)
+        gl.glVertex2i(-1, 1)
+        gl.glTexCoord2i(-2, 2)
+        gl.glEnd()
 
-        self.textureShader.unbind()
+        self.shader.unbind()
 
     def drawGUI(self):
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0, self.w, 0, self.h, -1, 1)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        gl.glOrtho(0, self.w, 0, self.h, -1, 1)
 
         for label in self.helpLabels:
             label.draw()

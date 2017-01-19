@@ -20,6 +20,11 @@ class TestShaderInit(BaseCase):
     def test_shader_is_linked(self):
         self.assertTrue(self.shader.linked)
 
+    def test_shaders_loaded(self):
+        self.assertEqual(self.shader.vertex_shader, vertexCode)
+        self.assertEqual(self.shader.fragment_shader, fragmentCode)
+        self.assertEqual(self.shader.geometry_shader, [])
+
 class TestCreateShader(BaseCase):
 
     def setUp(self):
