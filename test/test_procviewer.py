@@ -1,9 +1,11 @@
-import unittest, sys
+import unittest
+import sys
+import json
 from test_base import *
 
-from pyglet.window import key
+# from pyglet.window import key
 # Pull in the procviewer file for testing
-from procviewer import *
+from procviewer import ShaderController, update_permutation
 
 class TestTextureShaderInitBlank(BaseCase):
 
@@ -612,60 +614,61 @@ class TestUnimplementedSetupArrayMethods(BaseCase):
 class TestBindingTrigger(BaseCase):
 
     def setUp(self):
+        self.key = 113 # key.Q
         shader = Mock(vertex_shader="", fragment_shader="")
         self.viewer = ShaderController(shader, "blank/blank_shader")
 
     def test_symbol_not_bound(self):
-        self.assertFalse(self.viewer.binding_trigger(key.Q))
+        self.assertFalse(self.viewer.binding_trigger(self.key))
 
     def test_toggle_key_bound(self):
         # Key bindings are normally prepared in the viewer.bindings and linked in usedkeys
         # Here we're just throwing them into usedkeys directly and ignoring the bindings table
-        self.viewer.used_keys[key.Q] = {}
-        self.viewer.used_keys[key.Q]['toggle_key'] = key.Q
-        self.viewer.used_keys[key.Q]['default'] = False
+        self.viewer.used_keys[self.key] = {}
+        self.viewer.used_keys[self.key]['toggle_key'] = self.key
+        self.viewer.used_keys[self.key]['default'] = False
         # Check the bound key caused an action
-        self.assertTrue(self.viewer.binding_trigger(key.Q))
+        self.assertTrue(self.viewer.binding_trigger(self.key))
         # Check the default value was toggled
-        self.assertTrue(self.viewer.used_keys[key.Q]['default'])
+        self.assertTrue(self.viewer.used_keys[self.key]['default'])
 
     def test_inc_key_bound(self):
-        self.viewer.used_keys[key.Q] = {}
-        self.viewer.used_keys[key.Q]['inc_key'] = key.Q
-        self.viewer.used_keys[key.Q]['default'] = 10
-        self.viewer.used_keys[key.Q]['diff'] = 5
+        self.viewer.used_keys[self.key] = {}
+        self.viewer.used_keys[self.key]['inc_key'] = self.key
+        self.viewer.used_keys[self.key]['default'] = 10
+        self.viewer.used_keys[self.key]['diff'] = 5
         # Check the bound key caused an action
-        self.assertTrue(self.viewer.binding_trigger(key.Q))
+        self.assertTrue(self.viewer.binding_trigger(self.key))
         # Check the default value was incremented
-        self.assertEqual(self.viewer.used_keys[key.Q]['default'], 15)
+        self.assertEqual(self.viewer.used_keys[self.key]['default'], 15)
 
     def test_dec_key_bound(self):
-        self.viewer.used_keys[key.Q] = {}
-        self.viewer.used_keys[key.Q]['dec_key'] = key.Q
-        self.viewer.used_keys[key.Q]['default'] = 10
-        self.viewer.used_keys[key.Q]['diff'] = 5
+        self.viewer.used_keys[self.key] = {}
+        self.viewer.used_keys[self.key]['dec_key'] = self.key
+        self.viewer.used_keys[self.key]['default'] = 10
+        self.viewer.used_keys[self.key]['diff'] = 5
         # Check the bound key caused an action
-        self.assertTrue(self.viewer.binding_trigger(key.Q))
+        self.assertTrue(self.viewer.binding_trigger(self.key))
         # Check the default value was decremented
-        self.assertEqual(self.viewer.used_keys[key.Q]['default'], 5)
+        self.assertEqual(self.viewer.used_keys[self.key]['default'], 5)
 
     def test_shuffle_key_bound(self):
-        self.viewer.used_keys[key.Q] = {}
-        self.viewer.used_keys[key.Q]['shuffle_key'] = key.Q
-        self.viewer.used_keys[key.Q]['default'] = [0, 1, 2, 3, 4]
-        self.viewer.used_keys[key.Q]['loop'] = len(self.viewer.used_keys[key.Q]['default'])
-        self.viewer.used_keys[key.Q]['seed'] = 1
+        self.viewer.used_keys[self.key] = {}
+        self.viewer.used_keys[self.key]['shuffle_key'] = self.key
+        self.viewer.used_keys[self.key]['default'] = [0, 1, 2, 3, 4]
+        self.viewer.used_keys[self.key]['loop'] = len(self.viewer.used_keys[self.key]['default'])
+        self.viewer.used_keys[self.key]['seed'] = 1
         # Check the bound key caused an action
-        self.assertTrue(self.viewer.binding_trigger(key.Q))
+        self.assertTrue(self.viewer.binding_trigger(self.key))
         # Check the shuffle was triggered, i.e.: list is reordered
-        self.assertNotEqual(self.viewer.used_keys[key.Q]['default'], [0, 1, 2, 3, 4])
+        self.assertNotEqual(self.viewer.used_keys[self.key]['default'], [0, 1, 2, 3, 4])
         # but still the same values
-        self.assertEqual(sorted(self.viewer.used_keys[key.Q]['default']), [0, 1, 2, 3, 4])
+        self.assertEqual(sorted(self.viewer.used_keys[self.key]['default']), [0, 1, 2, 3, 4])
 
     def test_key_used_but_not_bound(self):
-        self.viewer.used_keys[key.Q] = {}
+        self.viewer.used_keys[self.key] = {}
         # Check the bound key caused an exception
-        self.assertRaises(ValueError, self.viewer.binding_trigger, key.Q)
+        self.assertRaises(ValueError, self.viewer.binding_trigger, self.key)
 
 class TestSetUniforms(BaseCase):
 
@@ -775,17 +778,21 @@ class TestGetHtmlHelps(BaseCase):
         self.viewer = ShaderController(shader, "blank/blank_shader")
 
     def test_no_bindings(self):
+        key = Mock()
         results = list(self.viewer.get_html_help(key))
         self.assertEqual(len(results), 0)
 
     def test_keys_bound(self):
+        key = Mock(W=119, Q=113, A=97, S=115)
+        yek = lambda v: {119: 'W', 113: 'Q', 97: 'A', 115: 'S'}.get(v, None)
+        key.symbol_string = Mock(side_effect=yek)
         self.viewer.bindings['Bool'] = {}
         self.viewer.bindings['Bool']['toggle_key'] = key.W
         self.viewer.bindings['Scalar'] = {}
         self.viewer.bindings['Scalar']['inc_key'] = key.Q
         self.viewer.bindings['Scalar']['dec_key'] = key.A
         self.viewer.bindings['List'] = {}
-        self.viewer.bindings['List']['shuffle_key'] = key.S        
+        self.viewer.bindings['List']['shuffle_key'] = key.S
         results = sorted(self.viewer.get_html_help(key))
         self.assertEqual(results, ['<b>Q/A</b>:Scalar', '<b>S</b>:List', '<b>W</b>:Bool'])
 
