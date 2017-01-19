@@ -2,35 +2,27 @@
     and generate key bindings to provide some key and mouse controls '''
 
 from __future__ import print_function
-import io
 import os
 import json
 import re
 from random import Random
-from shader import Shader
+# from shader import Shader
 
-class ShaderController(Shader):
+class ShaderController():
     ''' This class provides a control binding wrapper to a GLSL shader'''
 
-    def __init__(self, shader_path):
+    def __init__(self, shader, save_path):
         # Load shader code
-        vspath = '%s.v.glsl' % shader_path
-        fspath = '%s.f.glsl' % shader_path
-        with io.open(vspath) as vstrm, io.open(fspath) as fstrm:
-            vertexshader = ' '.join(vstrm)
-            fragmentshader = ' '.join(fstrm)
+        self.shader = shader
 
         # Load and update key bindings
         self.set_key_order()
         self.used_keys = {}
-        self.load_key_bindings("{}.bindings.json".format(shader_path))
-        self.parse_bindings_from_uniforms(vertexshader)
-        self.parse_bindings_from_uniforms(fragmentshader)
-        self.save_key_bindings("{}.bindings.json".format(shader_path))
+        self.load_key_bindings("{}.bindings.json".format(save_path))
+        self.parse_bindings_from_uniforms(shader.vertex_shader)
+        self.parse_bindings_from_uniforms(shader.fragment_shader)
+        self.save_key_bindings("{}.bindings.json".format(save_path))
         self.bind_mouse_controls()
-
-        # Create the shader
-        super(ShaderController, self).__init__(vertexshader, fragmentshader)
 
     def load_key_bindings(self, file):
         ''' Load pre-saved key bindings if they exist '''
@@ -317,15 +309,15 @@ class ShaderController(Shader):
                 var_default = [var_default]
             # Switch on type
             {
-                'int'   : self.uniformi,
-                'bool'  : self.uniformi,
-                'float' : self.uniformf,
-                'vec2'  : self.uniformf,
-                'vec3'  : self.uniformf,
-                'vec4'  : self.uniformf,
-                'ivec2' : self.uniformi,
-                'ivec3' : self.uniformi,
-                'ivec4' : self.uniformi,
+                'int'   : self.shader.uniformi,
+                'bool'  : self.shader.uniformi,
+                'float' : self.shader.uniformf,
+                'vec2'  : self.shader.uniformf,
+                'vec3'  : self.shader.uniformf,
+                'vec4'  : self.shader.uniformf,
+                'ivec2' : self.shader.uniformi,
+                'ivec3' : self.shader.uniformi,
+                'ivec4' : self.shader.uniformi,
             }[var_type](name, *var_default)
 
     def get_html_help(self, key):

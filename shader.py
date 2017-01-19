@@ -20,6 +20,11 @@ class Shader(object):
         # we are not linked yet
         self.linked = False
 
+        # Store shaders for convenience
+        self.vertex_shader = vert
+        self.fragment_shader = frag
+        self.geometry_shader = geom
+
         # create the vertex shader
         self.createShader(vert, GL_VERTEX_SHADER)
         # create the fragment shader
