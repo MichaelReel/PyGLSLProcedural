@@ -1,10 +1,16 @@
+'''
+This is the run file. Run this file to load a shader and attempt to get it to draw.abs
+To pick a shader, change the window creation line below to:
+`window = TextureWindow('path/file')`
+'''
+
 from __future__ import print_function
-from pyglet import gl
-from pyglet.window import key
-import pyglet
 import os
 import time
 import io
+import pyglet
+from pyglet import gl
+from pyglet.window import key
 from procviewer import ShaderController
 from shader import Shader
 
@@ -132,6 +138,7 @@ if not pyglet.gl.gl_info.have_extension('GL_EXT_gpu_shader4'):
 # window = TextureWindow('tiled/tile_shader')
 # window = TextureWindow('scrappy_grid/scrap_grid')
 # window = TextureWindow('blobs/blobs_shader')
-window = TextureWindow('spike/working_shader')
+# window = TextureWindow('spike/working_shader')
+window = TextureWindow('julia/julia')
 
 pyglet.app.run()
